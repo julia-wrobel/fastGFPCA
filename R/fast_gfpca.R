@@ -81,6 +81,9 @@ fast_gfpca <- function(Y,
     fastgfpca <- fpca.face(matrix(fit_fastgfpca$eta_i, N, J, byrow=FALSE),
                              npc=npc, argvals=sind, knots=knots,lower=0)
 
+    ## re-scale eigenfunctions to have the correct magnitude
+    fastgfpca$efunctions <- fastgfpca$efunctions*sqrt(J)
+
   }else{
     # create indicator for bin
     df_bin <-Y %>%
@@ -134,9 +137,10 @@ fast_gfpca <- function(Y,
       efuncs_approx[,k] <- approx(sind_bin, fastgfpca$efunctions[,k], xout=1:J)$y
     }
     ## re-scale eigenfunctions to have the correct magnitude
-    efuncs_approx <- efuncs_approx*sqrt(J/binwidth)
+    efuncs_approx <- efuncs_approx*sqrt(length(sind_bin))
     fastgfpca$efunctions <- efuncs_approx
   }
+
 
   # generalize this code to more than 4 eigenfunctions
   Y$id_fac <- factor(Y$id)
@@ -162,6 +166,6 @@ fast_gfpca <- function(Y,
   # next:return proper mu and scores
   fastgfpca$Yhat <- matrix(eta_hat, N, J, byrow = TRUE)
 
-  list(pca = fastgfpca, gam_mod = fit_fastgfpca)
+  fastgfpca
 
 }
