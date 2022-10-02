@@ -42,16 +42,19 @@
 #' df_gfpca <- sim_gfpca(N = 200, J = 200, case = 1)$df_gfpca
 #' gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth = 10, family = "binomial")
 #'
+#' @param Y dataframe with very specific columns
 #'@export
 
-fast_gfpca <- function(df, overlap = TRUE, binwidth = 10,
+fast_gfpca <- function(Y,
+                       overlap = TRUE,
+                       extrapolate = FALSE,
+                       binwidth = 10,
                        npc = 4, # need to build in npc argument
                        family = "binomial",
-                       extrapolate = FALSE,
                        ...){
   # create indicator function for bin
-  N <- length(unique(df$id))
-  J <- length(unique(df$index)) # assumes all subjects are on same even grid
+  N <- length(unique(Y$id))
+  J <- length(unique(Y$index)) # assumes all subjects are on same even grid
   sind <- (1:J)/J
 
   if(overlap){
@@ -59,7 +62,7 @@ fast_gfpca <- function(df, overlap = TRUE, binwidth = 10,
     pb <- txtProgressBar(0, J, style=3)
     for(j in 1:J){
       sind_j <- (j-binwidth/2):(j+binwidth/2) %% J + 1
-      df_j <-df %>%
+      df_j <-Y %>%
         filter(index %in% sind[sind_j])
         fit_j <- glmer(value ~ 1 + (1|id), data=df_j, family=binomial)
         fit_fastgfpca[[j]] <- data.frame("id" = 1:N,
@@ -80,7 +83,7 @@ fast_gfpca <- function(df, overlap = TRUE, binwidth = 10,
 
   }else{
     # create indicator for bin
-    df_bin <-df %>%
+    df_bin <-Y %>%
       mutate(sind_bin = rep(floor((1:J)/binwidth)*binwidth + binwidth/2, N)) %>%
       filter(sind_bin < J)
 
@@ -96,10 +99,8 @@ fast_gfpca <- function(df, overlap = TRUE, binwidth = 10,
     if(extrapolate){
       fit2 = df_bin %>%
         filter(sind_bin %in% c(max(sind_bin), min(sind_bin))) %>%
-        mutate(index_int = index * J) %>%
         nest_by(sind_bin) %>%
-        mutate(fit = list(glmer(value ~ index + (1|id), data=data, family=family,
-                                ...))) %>%
+        mutate(fit = list(glmer(value ~ index + (1|id), data=data, family=family))) %>%
         summarize(eta_i = predict(fit, type = "link"),
                   id = data$id,
                   sind_bin = data$index * J) %>%
@@ -107,19 +108,23 @@ fast_gfpca <- function(df, overlap = TRUE, binwidth = 10,
 
       fit_fastgfpca <- full_join(fit_fastgfpca, (fit2 %>%
                                                    filter(sind_bin < min(fit_fastgfpca$sind_bin) | sind_bin > max(fit_fastgfpca$sind_bin))))
+
+
     }
 
     # do FPCA on the local estimates \tilde{\eta_i(s)}
     # knots will be given by bindwidth for smaller values of D
-      # need to edit number of knots here
+    # need to edit number of knots here
     if(J/binwidth < 40){
       knots <- ceiling(J/binwidth/2)
     }else{
       knots <- 40
     }
-    sind_bin  <- sort(unique(df_bin$sind_bin))
-    fastgfpca <- fpca.face(matrix(fit_fastgfpca$eta_i, N, J/binwidth, byrow=FALSE),
+
+    sind_bin  <- sort(unique(fit_fastgfpca$sind_bin))
+    fastgfpca <- fpca.face(matrix(fit_fastgfpca$eta_i, N, length(sind_bin), byrow=FALSE),
                            pve=0.99, argvals=sind_bin, knots=knots)
+
 
     ## approximate eigenfunctions via linear interpolation
     ## on the original grid
@@ -134,22 +139,23 @@ fast_gfpca <- function(df, overlap = TRUE, binwidth = 10,
   }
 
   # generalize this code to more than 4 eigenfunctions
-  df$id_fac <- factor(df$id)
-  df$Phi1 <- fastgfpca$efunctions[,1]
-  df$Phi2 <- fastgfpca$efunctions[,2]
-  df$Phi3 <- fastgfpca$efunctions[,3]
-  df$Phi4 <- fastgfpca$efunctions[,4]
+  Y$id_fac <- factor(Y$id)
+  Y$Phi1 <- fastgfpca$efunctions[,1]
+  Y$Phi2 <- fastgfpca$efunctions[,2]
+  Y$Phi3 <- fastgfpca$efunctions[,3]
+  Y$Phi4 <- fastgfpca$efunctions[,4]
 
   # fit model using eigenfunctions as covariates to update scores
   fit_fastgfpca <- bam(value ~ s(index, k=10) +
                               s(id_fac, by=Phi1, bs="re") + s(id_fac, by=Phi2, bs="re") +
                               s(id_fac, by=Phi3, bs="re") + s(id_fac, by=Phi4, bs="re"),
-                            method="fREML", data=df, family=family, discrete=TRUE,
-                       ...)
+                            method="fREML", data=Y, family=family, discrete=TRUE,
+                       ...
+                       )
 
 
 
-  eta_hat <- predict(fit_fastgfpca, newdata=df, type='link')
+  eta_hat <- predict(fit_fastgfpca, newdata=Y, type='link')
   # return something like a standard refund FPCA list object
   # return Yhat matrix (really eta_hat) where each row is a subject and each column a point in time
 
