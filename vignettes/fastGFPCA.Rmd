@@ -16,4 +16,17 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(fastGFPCA)
+library(tidyverse)
 ```
+
+
+Simulate data that has periodic endpoints with 200 subjects and 100 timepoints
+
+```{r}
+# simulate data
+dat_sim <- sim_gfpca(N = 200, J = 100, case = 1)
+
+df_bfpca <- dat_sim$df_gxfpca
+bin_len = 10
+```
+

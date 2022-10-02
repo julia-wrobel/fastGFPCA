@@ -1,16 +1,54 @@
-## fastGFPCA code
-## contains a couple utility functions and a main function
+#' Fast generalized functional principal components analysis
+#'
+#' I fast implementation of GFPCA that uses the ...
+#' The number of functional principal components (FPCs) can either be specified
+#' directly (argument \code{npc}) or chosen based on the explained share of
+#' variance (\code{npc_varExplained}). In the latter case, the explained share of
+#' variance and accordingly the number of FPCs is estimated before the main
+#' estimation step by once running the FPCA with \code{npc = 20} (and
+#' correspondingly \code{Kt = 20}). Doing so, we approximate the overall
+#' variance in the data \code{Y} with the variance represented by the FPC basis
+#' with 20 FPCs.
+#'
 
+#'
+#' @author Andrew Leroux \email{andrew.leroux@@cuanschutz.edu},
+#' Julia Wrobel \email{julia.wrobel@@cuanschutz.edu}
+#' @import dplyr
+#' @importFrom stats approx
+#' @importFrom refund fpca.face
+#' @importFrom lme4 glmer
+#' @importFrom utils txtProgressBar
+#' @importFrom mgcv bam predict.bam
+#'
+#' @return An object of class \code{fpca} containing:
+#' \item{efunctions}{\eqn{D \times npc} matrix of estimated FPC basis functions.}
+#' \item{evalues}{Estimated variance of the FPC scores.}
+#' \item{npc}{number of FPCs.}
+#' \item{scores}{\eqn{I \times npc} matrix of estimated FPC scores.}
+#' \item{mu}{Estimated population-level mean.}
+#' \item{Yhat}{FPC approximation of subject-specific means, before applying the
+#' response function.}
+#' \item{Y}{The observed data.}
+#' \item{family}{for compatibility with \code{refund.shiny} package.}
+#' @export
+#' @references Xiao, L., Ruppert, D., Zipunnikov, V., and Crainiceanu, C. (2016).
+#' Fast covariance estimation for high-dimensional functional data.
+#' \emph{Statistics and Computing}, 26, 409-421.
+#' DOI: 10.1007/s11222-014-9485-x.
 
-# df is the dataframe in the same format it is read in for registr::bfpca
-# glmer::glmer
-# refund::fpca.face
-# Make it an option to return the data and yhat but not mandatory
-# generalize to user specificied number of PCs, or define by PVE
-# make sure compatible with refund.shiny
+#' @examples
+#' # simulate data
+#' df_gfpca <- sim_gfpca(N = 200, J = 200, case = 1)$df_gfpca
+#' gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth = 10, family = "binomial")
+#'
+#'@export
+
 fast_gfpca <- function(df, overlap = TRUE, binwidth = 10,
                        npc = 4, # need to build in npc argument
-                       family = "binomial"){
+                       family = "binomial",
+                       extrapolate = FALSE,
+                       ...){
   # create indicator function for bin
   N <- length(unique(df$id))
   J <- length(unique(df$index)) # assumes all subjects are on same even grid
@@ -55,6 +93,22 @@ fast_gfpca <- function(df, overlap = TRUE, binwidth = 10,
                 id = 1:N) %>%
       ungroup()
 
+    if(extrapolate){
+      fit2 = df_bin %>%
+        filter(sind_bin %in% c(max(sind_bin), min(sind_bin))) %>%
+        mutate(index_int = index * J) %>%
+        nest_by(sind_bin) %>%
+        mutate(fit = list(glmer(value ~ index + (1|id), data=data, family=family,
+                                ...))) %>%
+        summarize(eta_i = predict(fit, type = "link"),
+                  id = data$id,
+                  sind_bin = data$index * J) %>%
+        ungroup()
+
+      fit_fastgfpca <- full_join(fit_fastgfpca, (fit2 %>%
+                                                   filter(sind_bin < min(fit_fastgfpca$sind_bin) | sind_bin > max(fit_fastgfpca$sind_bin))))
+    }
+
     # do FPCA on the local estimates \tilde{\eta_i(s)}
     # knots will be given by bindwidth for smaller values of D
       # need to edit number of knots here
@@ -90,7 +144,8 @@ fast_gfpca <- function(df, overlap = TRUE, binwidth = 10,
   fit_fastgfpca <- bam(value ~ s(index, k=10) +
                               s(id_fac, by=Phi1, bs="re") + s(id_fac, by=Phi2, bs="re") +
                               s(id_fac, by=Phi3, bs="re") + s(id_fac, by=Phi4, bs="re"),
-                            method="fREML", data=df, family=family, discrete=TRUE)
+                            method="fREML", data=df, family=family, discrete=TRUE,
+                       ...)
 
 
 
@@ -101,6 +156,6 @@ fast_gfpca <- function(df, overlap = TRUE, binwidth = 10,
   # next:return proper mu and scores
   fastgfpca$Yhat <- matrix(eta_hat, N, J, byrow = TRUE)
 
-  fastgfpca
+  list(pca = fastgfpca, gam_mod = fit_fastgfpca)
 
 }
