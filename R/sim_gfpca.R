@@ -48,7 +48,8 @@ sim_gfpca <- function(N = 500, J = 100, case = 1, family = "binomial"){
   list(
     df_gfpca = df_gfpca,
     psi = psi,
-    lambda = lambdaTrue
+    lambda = lambdaTrue,
+    scores = xi
   )
 }
 
