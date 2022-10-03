@@ -165,6 +165,7 @@ fast_gfpca <- function(Y,
 
   # next:return proper mu and scores
   fastgfpca$Yhat <- matrix(eta_hat, N, J, byrow = TRUE)
+  fastgfpca$family <- family
 
   fastgfpca
 
