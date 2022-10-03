@@ -13,6 +13,9 @@
 #' Poisson and Gaussian families as well.
 #' @export
 #'
+#' @example
+#'
+#' df <- sim_gfpca(N = 200, J = 100, case = 1, family = "binomial")$df_gfpca
 sim_gfpca <- function(N = 500, J = 100, case = 1, family = "binomial"){
   sind <- (1:J)/J
   K    <- 4 #number of eigenfunctions
@@ -39,11 +42,11 @@ sim_gfpca <- function(N = 500, J = 100, case = 1, family = "binomial"){
 
   df_gfpca <- data.frame("id"=rep(1:N, each=J),
                          "index" = rep(sind, N),
-                         "value" = as.vector(t(Y)))
+                         "value" = as.vector(t(Y)),
+                         eta = as.vector(t(X)))
 
   list(
     df_gfpca = df_gfpca,
-    xB = X,
     psi = psi,
     lambda = lambdaTrue
   )
