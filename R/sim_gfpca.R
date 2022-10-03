@@ -11,11 +11,14 @@
 #' based on sqrt functions.
 #' @param family not currently implemented. Currently returns binary data. Will be adapted for
 #' Poisson and Gaussian families as well.
+#'
+#' @importFrom stats plogis binomial rnorm rbinom
+#'
 #' @export
 #'
-#' @example
-#'
+#' @examples
 #' df <- sim_gfpca(N = 200, J = 100, case = 1, family = "binomial")$df_gfpca
+#'
 sim_gfpca <- function(N = 500, J = 100, case = 1, family = "binomial"){
   sind <- (1:J)/J
   K    <- 4 #number of eigenfunctions

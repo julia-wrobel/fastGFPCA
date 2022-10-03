@@ -42,7 +42,8 @@ with 20 FPCs.
 }
 \examples{
 # simulate data
-df_gfpca <- sim_gfpca(N = 200, J = 200, case = 1)$df_gfpca
+set.seed(1001)
+df_gfpca <- sim_gfpca(N = 50, J = 100, case = 1)$df_gfpca
 gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth = 10, family = "binomial")
 
 }

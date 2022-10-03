@@ -23,3 +23,7 @@ This function generates simulated generalized functional principal components da
 Simulation setup is adapted from code in the help file for the function fpca.face
 from the refund package. 4 true principal components are generated.
 }
+\examples{
+df <- sim_gfpca(N = 200, J = 100, case = 1, family = "binomial")$df_gfpca
+
+}

@@ -15,10 +15,10 @@
 #' @author Andrew Leroux \email{andrew.leroux@@cuanschutz.edu},
 #' Julia Wrobel \email{julia.wrobel@@cuanschutz.edu}
 #' @import dplyr
-#' @importFrom stats approx
+#' @importFrom stats approx binomial coef predict binomial
 #' @importFrom refund fpca.face
 #' @importFrom lme4 glmer
-#' @importFrom utils txtProgressBar
+#' @importFrom utils txtProgressBar setTxtProgressBar data
 #' @importFrom mgcv bam predict.bam
 #'
 #' @return An object of class \code{fpca} containing:
@@ -39,7 +39,8 @@
 
 #' @examples
 #' # simulate data
-#' df_gfpca <- sim_gfpca(N = 200, J = 200, case = 1)$df_gfpca
+#' set.seed(1001)
+#' df_gfpca <- sim_gfpca(N = 50, J = 100, case = 1)$df_gfpca
 #' gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth = 10, family = "binomial")
 #'
 #' @param Y dataframe with very specific columns
@@ -160,7 +161,7 @@ fast_gfpca <- function(Y,
 
   # return fpca elements from bam
   eta_hat <- predict(fit_fastgfpca, newdata=Y, type='link')
-  score_hat <- coef(gfpca_mod$fit)
+  score_hat <- coef(fit_fastgfpca)
   scores <- matrix(score_hat[grep("Phi",names(score_hat))], N, npc, byrow = TRUE)
 
 

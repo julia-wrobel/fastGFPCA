@@ -1,9 +1,14 @@
 Package: fastGFPCA
-Title: What the Package Does (One Line, Title Case)
+Title: Fast generalized principal components analysis
 Version: 0.0.0.9000
-Authors@R: 
-    person("Julia", "Wrobel", , "julia.wrobel@cuanschutz.edu", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+Authors@R: c(
+    person("Julia", "Wrobel", role = c("aut", "cre"), 
+    email = "julia.wrobel@cuanschutz.edu",
+    comment = c(ORCID = "0000-0001-6783-1421")),
+    person("Ciprian", "Crainiceanu", role = "aut", email = "ccraini1@jhu.edu"),
+    person("Andrew", "Leroux", role = "aut", email = "andrew.leroux@cuanschutz.edu")
+    )
+Description: A method for performing fast scalable GFPCA.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -14,4 +19,8 @@ Suggests:
     tidyverse
 VignetteBuilder: knitr
 Imports: 
-    magrittr
+    magrittr,
+    dplyr,
+    lme4,
+    mgcv,
+    refund
