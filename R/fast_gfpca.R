@@ -100,22 +100,6 @@ fast_gfpca <- function(Y,
                 id = 1:N) %>%
       ungroup()
 
-    if(extrapolate){
-      fit2 = df_bin %>%
-        filter(sind_bin %in% c(max(sind_bin), min(sind_bin))) %>%
-        nest_by(sind_bin) %>%
-        mutate(fit = list(glmer(value ~ index + (1|id), data=data, family=family))) %>%
-        summarize(eta_i = predict(fit, type = "link"),
-                  id = data$id,
-                  sind_bin = data$index * J) %>%
-        ungroup()
-
-      fit_fastgfpca <- full_join(fit_fastgfpca, (fit2 %>%
-                                                   filter(sind_bin < min(fit_fastgfpca$sind_bin) | sind_bin > max(fit_fastgfpca$sind_bin))))
-
-
-    }
-
     # do FPCA on the local estimates \tilde{\eta_i(s)}
     # knots will be given by bindwidth for smaller values of D
     # need to edit number of knots here
@@ -158,17 +142,10 @@ fast_gfpca <- function(Y,
                        ...
                        )
 
-
-  # return fpca elements from bam
   eta_hat <- predict(fit_fastgfpca, newdata=Y, type='link')
   score_hat <- coef(fit_fastgfpca)
-  scores <- matrix(score_hat[grep("Phi",names(score_hat))], N, npc, byrow = TRUE)
-
-
-  # next:return proper mu and scores
-  fastgfpca$Yhat <- matrix(eta_hat, N, J, byrow = TRUE)
-  fastgfpca$family <- family
-  fastgfpca$scores <- scores
+  fastgfpca$scores <- matrix(score_hat[grep("Phi",names(score_hat))], N, npc)
+  fastgfpca$mu <- (predict(fit_fastgfpca, type = "terms")[,1] + score_hat[1])[1:J]
 
   #fastgfpca$fit <- fit_fastgfpca
 
