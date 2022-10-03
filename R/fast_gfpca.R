@@ -158,14 +158,18 @@ fast_gfpca <- function(Y,
                        )
 
 
-
+  # return fpca elements from bam
   eta_hat <- predict(fit_fastgfpca, newdata=Y, type='link')
-  # return something like a standard refund FPCA list object
-  # return Yhat matrix (really eta_hat) where each row is a subject and each column a point in time
+  score_hat <- coef(gfpca_mod$fit)
+  scores <- matrix(score_hat[grep("Phi",names(score_hat))], N, npc, byrow = TRUE)
+
 
   # next:return proper mu and scores
   fastgfpca$Yhat <- matrix(eta_hat, N, J, byrow = TRUE)
   fastgfpca$family <- family
+  fastgfpca$scores <- scores
+
+  #fastgfpca$fit <- fit_fastgfpca
 
   fastgfpca
 
