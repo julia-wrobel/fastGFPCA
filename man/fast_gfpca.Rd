@@ -4,15 +4,7 @@
 \alias{fast_gfpca}
 \title{Fast generalized functional principal components analysis}
 \usage{
-fast_gfpca(
-  Y,
-  overlap = TRUE,
-  extrapolate = FALSE,
-  binwidth = 10,
-  npc = 4,
-  family = "binomial",
-  ...
-)
+fast_gfpca(Y, overlap = TRUE, binwidth = 10, npc = 4, family = "binomial", ...)
 }
 \arguments{
 \item{Y}{dataframe with very specific columns}

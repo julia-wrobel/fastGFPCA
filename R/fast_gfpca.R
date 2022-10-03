@@ -48,12 +48,13 @@
 
 fast_gfpca <- function(Y,
                        overlap = TRUE,
-                       extrapolate = FALSE,
                        binwidth = 10,
                        npc = 4, # need to build in npc argument
                        family = "binomial",
                        ...){
-  # create indicator function for bin
+
+  # add check that binwidth is even. If not, it will bet converted to an even number
+
   N <- length(unique(Y$id))
   J <- length(unique(Y$index)) # assumes all subjects are on same even grid
   sind <- (1:J)/J
@@ -86,10 +87,12 @@ fast_gfpca <- function(Y,
     fastgfpca$efunctions <- fastgfpca$efunctions*sqrt(J)
 
   }else{
-    # create indicator for bin
-    df_bin <-Y %>%
-      mutate(sind_bin = rep(floor((1:J)/binwidth)*binwidth + binwidth/2, N)) %>%
-      filter(sind_bin < J)
+    # create indicator for asymmetric bins
+    bins = c(rep(1, ceiling(binwidth/2)), rep(seq(binwidth, (J-binwidth), by = binwidth),
+                                              each = binwidth),
+             rep(J, ceiling(binwidth/2)))
+
+    df_bin <- Y %>%mutate(sind_bin = rep(bins, N))
 
     # fit local model
     fit_fastgfpca <- df_bin %>%

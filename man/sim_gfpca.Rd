@@ -4,7 +4,7 @@
 \alias{sim_gfpca}
 \title{Simulate GFPCA}
 \usage{
-sim_gfpca(N = 500, J = 100, case = 1, family = "binomial")
+sim_gfpca(N = 500, J = 100, case = 1, family = "binomial", sigma = 2)
 }
 \arguments{
 \item{N}{Number of subjects.}
@@ -15,8 +15,10 @@ sim_gfpca(N = 500, J = 100, case = 1, family = "binomial")
 are based on alternating sine and cosines. If case = 2 true eigenfunctions are
 based on sqrt functions.}
 
-\item{family}{not currently implemented. Currently returns binary data. Will be adapted for
-Poisson and Gaussian families as well.}
+\item{family}{Defines exponential family for generating data. Options are binomial (default),
+poisson, or gaussian.}
+
+\item{sigma}{Defaults to 2. Error variance for Y when family = "gaussian".}
 }
 \description{
 This function generates simulated generalized functional principal components data.
@@ -24,6 +26,13 @@ Simulation setup is adapted from code in the help file for the function fpca.fac
 from the refund package. 4 true principal components are generated.
 }
 \examples{
+# generate binary data
 df <- sim_gfpca(N = 200, J = 100, case = 1, family = "binomial")$df_gfpca
+
+# generate Poisson data
+df <- sim_gfpca(N = 200, J = 100, case = 1, family = "poisson")$df_gfpca
+
+# generate Gaussian data
+df <- sim_gfpca(N = 200, J = 100, case = 1, family = "gaussian")$df_gfpca
 
 }
