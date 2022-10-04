@@ -4,10 +4,25 @@
 \alias{fast_gfpca}
 \title{Fast generalized functional principal components analysis}
 \usage{
-fast_gfpca(Y, overlap = TRUE, binwidth = 10, npc = 4, family = "binomial", ...)
+fast_gfpca(
+  Y,
+  overlap = TRUE,
+  binwidth = 10,
+  pve = 0.99,
+  npc = NULL,
+  family = "binomial",
+  ...
+)
 }
 \arguments{
 \item{Y}{dataframe with very specific columns}
+
+\item{pve}{proportion of variance explained: used to choose the number of
+principal components unless \code{npc} is specified.}
+
+\item{npc}{how many smooth PCs to try to extract, if \code{NULL} (the
+default) then npc is chosen based on \code{pve}
+.}
 }
 \value{
 An object of class \code{fpca} containing:

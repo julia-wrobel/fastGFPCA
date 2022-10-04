@@ -44,16 +44,23 @@
 #' gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth = 10, family = "binomial")
 #'
 #' @param Y dataframe with very specific columns
+#' @param pve proportion of variance explained: used to choose the number of
+#' principal components unless `npc` is specified.
+#' @param npc how many smooth PCs to try to extract, if \code{NULL} (the
+#' default) then npc is chosen based on `pve`
+#' .
 #'@export
 
 fast_gfpca <- function(Y,
                        overlap = TRUE,
                        binwidth = 10,
-                       npc = 4, # need to build in npc argument
+                       pve = 0.99,
+                       npc = NULL,
                        family = "binomial",
                        ...){
 
   # add check that binwidth is even. If not, it will bet converted to an even number
+  # if NPC is null need a way to specify - choose based on what is returned based on PVE
 
   N <- length(unique(Y$id))
   J <- length(unique(Y$index)) # assumes all subjects are on same even grid
@@ -81,10 +88,12 @@ fast_gfpca <- function(Y,
     }
 
     fastgfpca <- fpca.face(matrix(fit_fastgfpca$eta_i, N, J, byrow=FALSE),
-                             npc=npc, argvals=sind, knots=knots,lower=0)
+                           npc=npc, pve=0.99,
+                           argvals=sind, knots=knots,lower=0)
 
-    ## re-scale eigenfunctions to have the correct magnitude
-    fastgfpca$efunctions <- fastgfpca$efunctions*sqrt(J)
+    if(is.null(npc)){
+      npc = fastgfpca$npc
+    }
 
   }else{
     # create indicator for asymmetric bins
@@ -92,7 +101,7 @@ fast_gfpca <- function(Y,
                                               each = binwidth),
              rep(J, ceiling(binwidth/2)))
 
-    df_bin <- Y %>%mutate(sind_bin = rep(bins, N))
+    df_bin <- Y %>% mutate(sind_bin = rep(bins, N))
 
     # fit local model
     fit_fastgfpca <- df_bin %>%
@@ -114,36 +123,41 @@ fast_gfpca <- function(Y,
 
     sind_bin  <- sort(unique(fit_fastgfpca$sind_bin))
     fastgfpca <- fpca.face(matrix(fit_fastgfpca$eta_i, N, length(sind_bin), byrow=FALSE),
-                           pve=0.99, argvals=sind_bin, knots=knots)
+                           npc = npc, pve=0.99,
+                           argvals=sind_bin, knots=knots)
 
+    if(is.null(npc)){
+      npc = fastgfpca$npc
+    }
 
     ## approximate eigenfunctions via linear interpolation
     ## on the original grid
     ## move this to utils
-    efuncs_approx <- matrix(NA, J, 4)
-    for(k in 1:4){
+    efuncs_approx <- matrix(NA, J, npc)
+    for(k in 1:npc){
       efuncs_approx[,k] <- approx(sind_bin, fastgfpca$efunctions[,k], xout=1:J)$y
     }
-    ## re-scale eigenfunctions to have the correct magnitude
-    efuncs_approx <- efuncs_approx*sqrt(length(sind_bin))
     fastgfpca$efunctions <- efuncs_approx
   }
 
+  ## re-scale eigenfunctions to have the correct magnitude
+  fastgfpca$efunctions <- fastgfpca$efunctions*sqrt(J)
 
   # generalize this code to more than 4 eigenfunctions
   Y$id_fac <- factor(Y$id)
-  Y$Phi1 <- fastgfpca$efunctions[,1]
-  Y$Phi2 <- fastgfpca$efunctions[,2]
-  Y$Phi3 <- fastgfpca$efunctions[,3]
-  Y$Phi4 <- fastgfpca$efunctions[,4]
+  gam_formula = "value ~ s(index, k=10)"
+  for(i in 1:npc){
+    Y[[paste0("Phi", i)]] <- fastgfpca$efunctions[,i]
+    gam_formula = paste0(gam_formula, " + s(id_fac, by=Phi",i,", bs= 're')")
+  }
+
 
   # fit model using eigenfunctions as covariates to update scores
-  fit_fastgfpca <- bam(value ~ s(index, k=10) +
-                              s(id_fac, by=Phi1, bs="re") + s(id_fac, by=Phi2, bs="re") +
-                              s(id_fac, by=Phi3, bs="re") + s(id_fac, by=Phi4, bs="re"),
-                            method="fREML", data=Y, family=family, discrete=TRUE,
+  fit_fastgfpca <- bam(formula = as.formula(gam_formula),
+                       method="fREML", data=Y, family=family, discrete=TRUE,
                        ...
-                       )
+  )
+
 
   eta_hat <- predict(fit_fastgfpca, newdata=Y, type='link')
   score_hat <- coef(fit_fastgfpca)
