@@ -158,12 +158,15 @@ fast_gfpca <- function(Y,
                        ...
   )
 
-
+  # next:return proper mu and scores
+  # for now return scores from face and bam
   eta_hat <- predict(fit_fastgfpca, newdata=Y, type='link')
   score_hat <- coef(fit_fastgfpca)
   fastgfpca$mu <- (predict(fit_fastgfpca, type = "terms")[,1] + score_hat[1])[1:J]
 
-  # for now return scores from face and bam
+  fastgfpca$Yhat <- matrix(eta_hat, N, J, byrow = TRUE)
+  fastgfpca$family <- family
+
   fastgfpca$scores_face <- fastgfpca$scores
   fastgfpca$scores <- matrix(score_hat[grep("Phi",names(score_hat))], N, npc)
 
