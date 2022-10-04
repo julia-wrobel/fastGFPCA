@@ -43,7 +43,8 @@
 #' df_gfpca <- sim_gfpca(N = 50, J = 100, case = 1)$df_gfpca
 #' gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth = 10, family = "binomial")
 #'
-#' @param Y dataframe with very specific columns
+#' @param Y dataframe with very specific column
+#' @param argvals numeric; grid over which functions are observed.  If null defaults to unique values of index.
 #' @param pve proportion of variance explained: used to choose the number of
 #' principal components unless `npc` is specified.
 #' @param npc how many smooth PCs to try to extract, if \code{NULL} (the
@@ -52,6 +53,7 @@
 #'@export
 
 fast_gfpca <- function(Y,
+                       argvals = NULL, # grid for functional observations
                        overlap = TRUE,
                        binwidth = 10,
                        pve = 0.99,
@@ -64,7 +66,10 @@ fast_gfpca <- function(Y,
 
   N <- length(unique(Y$id))
   J <- length(unique(Y$index)) # assumes all subjects are on same even grid
-  sind <- seq(0, 1, length.out = J)
+
+  if(is.null(argvals)){
+    argvals = sort(unique(Y$index))
+  }
 
   if(overlap){
     fit_fastgfpca <- vector(mode="list",length=J)
@@ -72,7 +77,7 @@ fast_gfpca <- function(Y,
     for(j in 1:J){
       sind_j <- (j-binwidth/2):(j+binwidth/2) %% J + 1
       df_j <-Y %>%
-        filter(index %in% sind[sind_j])
+        filter(index %in% argvals[sind_j])
         fit_j <- glmer(value ~ 1 + (1|id), data=df_j, family=binomial)
         fit_fastgfpca[[j]] <- data.frame("id" = 1:N,
                                          "eta_i" = coef(fit_j)$id[[1]],
@@ -89,7 +94,7 @@ fast_gfpca <- function(Y,
 
     fastgfpca <- fpca.face(matrix(fit_fastgfpca$eta_i, N, J, byrow=FALSE),
                            npc=npc, pve=0.99,
-                           argvals=sind, knots=knots,lower=0)
+                           argvals = argvals, knots=knots,lower=0)
 
     if(is.null(npc)){
       npc = fastgfpca$npc

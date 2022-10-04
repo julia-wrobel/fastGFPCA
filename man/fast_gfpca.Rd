@@ -6,6 +6,7 @@
 \usage{
 fast_gfpca(
   Y,
+  argvals = NULL,
   overlap = TRUE,
   binwidth = 10,
   pve = 0.99,
@@ -15,7 +16,9 @@ fast_gfpca(
 )
 }
 \arguments{
-\item{Y}{dataframe with very specific columns}
+\item{Y}{dataframe with very specific column}
+
+\item{argvals}{numeric; grid over which functions are observed.  If null defaults to unique values of index.}
 
 \item{pve}{proportion of variance explained: used to choose the number of
 principal components unless \code{npc} is specified.}
