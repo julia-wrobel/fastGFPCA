@@ -60,7 +60,7 @@ fast_gfpca <- function(Y,
                        ...){
 
   # add check that binwidth is even. If not, it will bet converted to an even number
-  # if NPC is null need a way to specify - choose based on what is returned based on PVE
+
 
   N <- length(unique(Y$id))
   J <- length(unique(Y$index)) # assumes all subjects are on same even grid
@@ -161,8 +161,11 @@ fast_gfpca <- function(Y,
 
   eta_hat <- predict(fit_fastgfpca, newdata=Y, type='link')
   score_hat <- coef(fit_fastgfpca)
-  fastgfpca$scores <- matrix(score_hat[grep("Phi",names(score_hat))], N, npc)
   fastgfpca$mu <- (predict(fit_fastgfpca, type = "terms")[,1] + score_hat[1])[1:J]
+
+  # for now return scores from face and bam
+  fastgfpca$scores_face <- fastgfpca$scores
+  fastgfpca$scores <- matrix(score_hat[grep("Phi",names(score_hat))], N, npc)
 
   #fastgfpca$fit <- fit_fastgfpca
 
