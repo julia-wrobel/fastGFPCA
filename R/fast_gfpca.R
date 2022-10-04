@@ -64,7 +64,7 @@ fast_gfpca <- function(Y,
 
   N <- length(unique(Y$id))
   J <- length(unique(Y$index)) # assumes all subjects are on same even grid
-  sind <- (1:J)/J
+  sind <- seq(0, 1, length.out = J)
 
   if(overlap){
     fit_fastgfpca <- vector(mode="list",length=J)
