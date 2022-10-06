@@ -61,7 +61,7 @@ fast_gfpca <- function(Y,
                        pve = 0.99,
                        npc = NULL,
                        family = "binomial",
-                       periodicity = FALSE,
+                       #periodicity = FALSE, #  right now behavior is periodicity is true for overlap, not for not
                        ...){
 
   # add check that binwidth is even. If not, it will bet converted to an even number
@@ -98,7 +98,7 @@ fast_gfpca <- function(Y,
     fastgfpca <- fpca.face(matrix(fit_fastgfpca$eta_i, N, J, byrow=FALSE),
                            npc=npc, pve=0.99,
                            argvals = argvals, knots=knots,lower=0,
-                           periodicity = periodicity)
+                           periodicity = TRUE)
 
     if(is.null(npc)){
       npc = fastgfpca$npc
@@ -109,6 +109,7 @@ fast_gfpca <- function(Y,
     bins = c(rep(1, ceiling(binwidth/2)), rep(seq(binwidth, (J-binwidth), by = binwidth),
                                               each = binwidth),
              rep(J, ceiling(binwidth/2)))
+
 
     df_bin <- Y %>% mutate(sind_bin = rep(bins, N))
 
@@ -130,17 +131,19 @@ fast_gfpca <- function(Y,
       knots <- 40
     }
 
-    sind_bin  <- sort(unique(fit_fastgfpca$sind_bin))
-    fastgfpca <- fpca.face(matrix(fit_fastgfpca$eta_i, N, length(sind_bin), byrow=FALSE),
+    argvals_bin <- sort(argvals[unique(bins)])
+    fastgfpca <- fpca.face(matrix(fit_fastgfpca$eta_i, N, length(argvals_bin), byrow=FALSE),
                            npc = npc, pve=0.99,
-                           argvals=sind_bin, knots=knots,
-                           periodicity = periodicity)
+                           argvals=argvals_bin,
+                           knots=knots,
+                           periodicity = FALSE)
 
     if(is.null(npc)){
       npc = fastgfpca$npc
     }
 
-    fastgfpca$efunctions <- reeval_efunctions(knots, sind_bin, argvals, fastgfpca$efunctions, npc)
+    fastgfpca$efunctions <- reeval_efunctions(knots, argvals_bin, argvals,
+                                              fastgfpca$efunctions, npc)
   }
 
   ## re-scale eigenfunctions to have the correct magnitude

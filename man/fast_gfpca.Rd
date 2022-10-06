@@ -12,7 +12,6 @@ fast_gfpca(
   pve = 0.99,
   npc = NULL,
   family = "binomial",
-  periodicity = FALSE,
   ...
 )
 }
