@@ -49,6 +49,8 @@
 #' principal components unless `npc` is specified.
 #' @param npc how many smooth PCs to try to extract, if \code{NULL} (the
 #' default) then npc is chosen based on `pve`
+#' @param family exponential family to be passed to \code{glmer} and \code{bam}.
+#' @param periodicity Option for a periodic spline basis. Defaults to FALSE.
 #' .
 #'@export
 
@@ -59,6 +61,7 @@ fast_gfpca <- function(Y,
                        pve = 0.99,
                        npc = NULL,
                        family = "binomial",
+                       periodicity = FALSE,
                        ...){
 
   # add check that binwidth is even. If not, it will bet converted to an even number
@@ -94,7 +97,8 @@ fast_gfpca <- function(Y,
 
     fastgfpca <- fpca.face(matrix(fit_fastgfpca$eta_i, N, J, byrow=FALSE),
                            npc=npc, pve=0.99,
-                           argvals = argvals, knots=knots,lower=0)
+                           argvals = argvals, knots=knots,lower=0,
+                           periodicity = periodicity)
 
     if(is.null(npc)){
       npc = fastgfpca$npc
@@ -129,26 +133,20 @@ fast_gfpca <- function(Y,
     sind_bin  <- sort(unique(fit_fastgfpca$sind_bin))
     fastgfpca <- fpca.face(matrix(fit_fastgfpca$eta_i, N, length(sind_bin), byrow=FALSE),
                            npc = npc, pve=0.99,
-                           argvals=sind_bin, knots=knots)
+                           argvals=sind_bin, knots=knots,
+                           periodicity = periodicity)
 
     if(is.null(npc)){
       npc = fastgfpca$npc
     }
 
-    ## approximate eigenfunctions via linear interpolation
-    ## on the original grid
-    ## move this to utils
-    efuncs_approx <- matrix(NA, J, npc)
-    for(k in 1:npc){
-      efuncs_approx[,k] <- approx(sind_bin, fastgfpca$efunctions[,k], xout=1:J)$y
-    }
-    fastgfpca$efunctions <- efuncs_approx
+    fastgfpca$efunctions <- reeval_efunctions(knots, sind_bin, argvals, fastgfpca$efunctions, npc)
   }
 
   ## re-scale eigenfunctions to have the correct magnitude
   fastgfpca$efunctions <- fastgfpca$efunctions*sqrt(J)
 
-  # generalize this code to more than 4 eigenfunctions
+
   Y$id_fac <- factor(Y$id)
   gam_formula = "value ~ s(index, k=10)"
   for(i in 1:npc){

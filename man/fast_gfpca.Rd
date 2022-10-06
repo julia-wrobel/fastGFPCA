@@ -12,6 +12,7 @@ fast_gfpca(
   pve = 0.99,
   npc = NULL,
   family = "binomial",
+  periodicity = FALSE,
   ...
 )
 }
@@ -24,7 +25,11 @@ fast_gfpca(
 principal components unless \code{npc} is specified.}
 
 \item{npc}{how many smooth PCs to try to extract, if \code{NULL} (the
-default) then npc is chosen based on \code{pve}
+default) then npc is chosen based on \code{pve}}
+
+\item{family}{exponential family to be passed to \code{glmer} and \code{bam}.}
+
+\item{periodicity}{Option for a periodic spline basis. Defaults to FALSE.
 .}
 }
 \value{
