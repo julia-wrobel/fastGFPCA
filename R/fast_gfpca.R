@@ -104,6 +104,9 @@ fast_gfpca <- function(Y,
       npc = fastgfpca$npc
     }
 
+    ## re-scale eigenfunctions to have the correct magnitude
+    fastgfpca$efunctions <- fastgfpca$efunctions*sqrt(J)
+
   }else{
     # create indicator for asymmetric bins
     bins = c(rep(1, ceiling(binwidth/2)), rep(seq(binwidth, (J-binwidth), by = binwidth),
@@ -142,12 +145,14 @@ fast_gfpca <- function(Y,
       npc = fastgfpca$npc
     }
 
+    ## re-scale eigenfunctions to have the correct magnitude
+    fastgfpca$efunctions <- fastgfpca$efunctions*sqrt(length(argvals_bin))
+
     fastgfpca$efunctions <- reeval_efunctions(knots, argvals_bin, argvals,
                                               fastgfpca$efunctions, npc)
   }
 
-  ## re-scale eigenfunctions to have the correct magnitude
-  fastgfpca$efunctions <- fastgfpca$efunctions*sqrt(J)
+
 
 
   Y$id_fac <- factor(Y$id)

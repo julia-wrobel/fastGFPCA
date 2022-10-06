@@ -43,10 +43,10 @@ library(fastGFPCA)
 
 # simulate data
 set.seed(10001)
-df_gfpca <- sim_gfpca(N = 50, J = 100, case = 1)$df_gfpca
+df_gfpca <- sim_gfpca(N = 50, J = 500, case = 1)$df_gfpca
 
 # run gfpca
-gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth = 5, family = "binomial")
+gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth = 10, npc = 4, family = "binomial")
 ```
 
 
