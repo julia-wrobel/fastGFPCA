@@ -4,12 +4,12 @@
 \alias{reeval_efunctions}
 \title{Get new spline basis for eigenfunctions}
 \usage{
-reeval_efunctions(knots, sind_bin, argvals, efunctions, npc)
+reeval_efunctions(knots, argvals_bin, argvals, efunctions, npc)
 }
 \arguments{
 \item{knots}{Number of knots for spline basis}
 
-\item{sind_bin}{Index on for binned data.}
+\item{argvals_bin}{Index on for binned data.}
 
 \item{argvals}{Full index on which to generate new basis.}
 

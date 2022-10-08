@@ -40,8 +40,18 @@
 #' @examples
 #' # simulate data
 #' set.seed(1001)
-#' df_gfpca <- sim_gfpca(N = 50, J = 100, case = 1)$df_gfpca
+#'
+#' # binomial data, with overlapping bins
+#' df_gfpca <- sim_gfpca(N = 200, J = 200, case = 1)$df_gfpca
 #' gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth = 10, family = "binomial")
+#'
+#' # binomial data, with bins that do not overlap
+#' df_gfpca <- sim_gfpca(N = 200, J = 200, case = 2)$df_gfpca
+#' gfpca_mod <- fast_gfpca(df_gfpca, overlap = FALSE, binwidth = 10, family = "binomial")
+#'
+#' Poisson data, overlapping bins
+#' df_gfpca <- sim_gfpca(N = 200, J = 200, case = 1, family = "poisson")$df_gfpca
+#' gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth = 10, family = "poisson")
 #'
 #' @param Y dataframe with very specific column
 #' @param argvals numeric; grid over which functions are observed.  If null defaults to unique values of index.
@@ -111,7 +121,7 @@ fast_gfpca <- function(Y,
     # create indicator for asymmetric bins
     bins = c(rep(1, ceiling(binwidth/2)), rep(seq(binwidth, (J-binwidth), by = binwidth),
                                               each = binwidth),
-             rep(J, ceiling(binwidth/2)))
+             rep(J, floor(binwidth/2)))
 
 
     df_bin <- Y %>% mutate(sind_bin = rep(bins, N))
@@ -128,7 +138,7 @@ fast_gfpca <- function(Y,
     # do FPCA on the local estimates \tilde{\eta_i(s)}
     # knots will be given by bindwidth for smaller values of D
     # need to edit number of knots here
-    if(J/binwidth < 40){
+    if(J/binwidth <= 40){
       knots <- ceiling(J/binwidth/2)
     }else{
       knots <- 40
@@ -177,11 +187,13 @@ fast_gfpca <- function(Y,
 
   fastgfpca$Yhat <- matrix(eta_hat, N, J, byrow = TRUE)
   fastgfpca$family <- family
+  fastgfpca$Y <- NULL # do not store Y
 
-  fastgfpca$scores_face <- fastgfpca$scores
   fastgfpca$scores <- matrix(score_hat[grep("Phi",names(score_hat))], N, npc)
 
+  #fastgfpca$scores_face <- fastgfpca$scores
   #fastgfpca$fit <- fit_fastgfpca
+
 
   fastgfpca
 
