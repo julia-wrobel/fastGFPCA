@@ -84,9 +84,7 @@ fast_gfpca <- function(Y,
   }
 
   if(overlap){
-    ##
-    tic(quiet = TRUE)
-    ##
+
 
     fit_fastgfpca <- vector(mode="list",length=J)
     pb <- txtProgressBar(0, J, style=3)
@@ -101,9 +99,8 @@ fast_gfpca <- function(Y,
                                          "sind_bin" = j)
       setTxtProgressBar(pb, j)
     }
-    ##
-    step2 = toc()
-    ##
+
+
     fit_fastgfpca <- bind_rows(fit_fastgfpca)
 
     if(J/binwidth < 20){
@@ -134,10 +131,6 @@ fast_gfpca <- function(Y,
 
     df_bin <- Y %>% mutate(sind_bin = rep(bins, N))
 
-    # fit local model
-    ##
-    tic()
-    ##
 
     fit_fastgfpca <- df_bin %>%
       nest_by(sind_bin) %>%
@@ -147,10 +140,6 @@ fast_gfpca <- function(Y,
                 b_i = eta_i - fit@beta,
                 id = 1:N) %>%
       ungroup()
-
-    ##
-    step2 = toc()
-    ##
 
     # do FPCA on the local estimates \tilde{\eta_i(s)}
     # knots will be given by bindwidth for smaller values of D
@@ -187,22 +176,13 @@ fast_gfpca <- function(Y,
     gam_formula = paste0(gam_formula, " + s(id_fac, by=Phi",i,", bs= 're')")
   }
 
-  ##
-  tic()
-  ##
-
   # fit model using eigenfunctions as covariates to update scores
   fit_fastgfpca <- bam(formula = as.formula(gam_formula),
                        method="fREML", data=Y, family=family, discrete=TRUE,
                        ...
   )
 
-  ##
-  step4 = toc()
-  ##
-
   # next:return proper mu and scores
-  # for now return scores from face and bam
   eta_hat <- predict(fit_fastgfpca, newdata=Y, type='link')
   score_hat <- coef(fit_fastgfpca)
   fastgfpca$mu <- (predict(fit_fastgfpca, type = "terms")[,1] + score_hat[1])[1:J]
@@ -212,11 +192,6 @@ fast_gfpca <- function(Y,
   fastgfpca$Y <- NULL # do not store Y
 
   fastgfpca$scores <- matrix(score_hat[grep("Phi",names(score_hat))], N, npc)
-
-  #fastgfpca$scores_face <- fastgfpca$scores
-  #fastgfpca$fit <- fit_fastgfpca
-  fastgfpca$time_step2 <- step2$toc - step2$tic
-  fastgfpca$time_step4 <- step4$toc - step4$tic
 
 
   fastgfpca

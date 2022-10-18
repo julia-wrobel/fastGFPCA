@@ -29,7 +29,7 @@ Simulate data that has periodic endpoints with 200 subjects and 100 timepoints
 bin_sim <- sim_gfpca(N = 100, J = 100, case = 1)
 
 bin_mod <- fast_gfpca(bin_sim$df_gfpca, overlap = TRUE, binwidth = 5, npc = 4,
-                      family = "binomial")
+                      family = binomial)
 
 
 bin_mod$family
@@ -43,7 +43,7 @@ Probit link
 
 ```{r}
 binprob_mod <- fast_gfpca(bin_sim$df_gfpca, overlap = TRUE, binwidth = 10, npc = 5,
-                          family = "binomial(link = 'probit')")
+                          family = binomial(link = "probit"))
 
 binprob_mod$family
 ```
