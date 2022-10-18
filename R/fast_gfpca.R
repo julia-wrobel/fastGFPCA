@@ -71,7 +71,6 @@ fast_gfpca <- function(Y,
                        pve = 0.99,
                        npc = NULL,
                        family = "binomial",
-                       #periodicity = FALSE, #  right now behavior is periodicity is true for overlap, not for not
                        ...){
 
   # add check that binwidth is even. If not, it will bet converted to an even number
@@ -85,18 +84,26 @@ fast_gfpca <- function(Y,
   }
 
   if(overlap){
+    ##
+    tic(quiet = TRUE)
+    ##
+
     fit_fastgfpca <- vector(mode="list",length=J)
     pb <- txtProgressBar(0, J, style=3)
     for(j in 1:J){
       sind_j <- (j-binwidth/2):(j+binwidth/2) %% J + 1
       df_j <-Y %>%
         filter(index %in% argvals[sind_j])
-        fit_j <- glmer(value ~ 1 + (1|id), data=df_j, family=binomial)
+        fit_j <- glmer(value ~ 1 + (1|id), data=df_j, family=family,
+                       nAGQ = 0)
         fit_fastgfpca[[j]] <- data.frame("id" = 1:N,
                                          "eta_i" = coef(fit_j)$id[[1]],
                                          "sind_bin" = j)
       setTxtProgressBar(pb, j)
     }
+    ##
+    step2 = toc()
+    ##
     fit_fastgfpca <- bind_rows(fit_fastgfpca)
 
     if(J/binwidth < 20){
@@ -107,7 +114,8 @@ fast_gfpca <- function(Y,
 
     fastgfpca <- fpca.face(matrix(fit_fastgfpca$eta_i, N, J, byrow=FALSE),
                            npc=npc, pve=0.99,
-                           argvals = argvals, knots=knots,lower=0,
+                           argvals = argvals,
+                           knots=knots,lower=0,
                            periodicity = TRUE)
 
     if(is.null(npc)){
@@ -127,13 +135,22 @@ fast_gfpca <- function(Y,
     df_bin <- Y %>% mutate(sind_bin = rep(bins, N))
 
     # fit local model
+    ##
+    tic()
+    ##
+
     fit_fastgfpca <- df_bin %>%
       nest_by(sind_bin) %>%
-      mutate(fit = list(glmer(value ~ 1 + (1|id), data=data, family=family))) %>%
+      mutate(fit = list(glmer(value ~ 1 + (1|id), data=data, family=family,
+                              nAGQ = 0))) %>%
       summarize(eta_i = coef(fit)$id[[1]],
                 b_i = eta_i - fit@beta,
                 id = 1:N) %>%
       ungroup()
+
+    ##
+    step2 = toc()
+    ##
 
     # do FPCA on the local estimates \tilde{\eta_i(s)}
     # knots will be given by bindwidth for smaller values of D
@@ -163,8 +180,6 @@ fast_gfpca <- function(Y,
   }
 
 
-
-
   Y$id_fac <- factor(Y$id)
   gam_formula = "value ~ s(index, k=10)"
   for(i in 1:npc){
@@ -172,12 +187,19 @@ fast_gfpca <- function(Y,
     gam_formula = paste0(gam_formula, " + s(id_fac, by=Phi",i,", bs= 're')")
   }
 
+  ##
+  tic()
+  ##
 
   # fit model using eigenfunctions as covariates to update scores
   fit_fastgfpca <- bam(formula = as.formula(gam_formula),
                        method="fREML", data=Y, family=family, discrete=TRUE,
                        ...
   )
+
+  ##
+  step4 = toc()
+  ##
 
   # next:return proper mu and scores
   # for now return scores from face and bam
@@ -186,13 +208,15 @@ fast_gfpca <- function(Y,
   fastgfpca$mu <- (predict(fit_fastgfpca, type = "terms")[,1] + score_hat[1])[1:J]
 
   fastgfpca$Yhat <- matrix(eta_hat, N, J, byrow = TRUE)
-  fastgfpca$family <- family
+  fastgfpca$family <- fit_fastgfpca$family
   fastgfpca$Y <- NULL # do not store Y
 
   fastgfpca$scores <- matrix(score_hat[grep("Phi",names(score_hat))], N, npc)
 
   #fastgfpca$scores_face <- fastgfpca$scores
   #fastgfpca$fit <- fit_fastgfpca
+  fastgfpca$time_step2 <- step2$toc - step2$tic
+  fastgfpca$time_step4 <- step4$toc - step4$tic
 
 
   fastgfpca
