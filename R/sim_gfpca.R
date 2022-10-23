@@ -9,11 +9,14 @@
 #' @param case Takes on values of 1 or 2. If case = 1 true eigenfunctions
 #' are based on alternating sine and cosines. If case = 2 true eigenfunctions are
 #' based on sqrt functions.
+#' @param mu Logical to indicate if a mean function should be included in the simulated data. Defaults to false (mu = 0).
+#' If TRUE, a mean function is constructed using B-splines.
 #' @param family Defines exponential family for generating data. Options are binomial (default),
 #' poisson, or gaussian.
 #' @param sigma Defaults to 2. Error variance for Y when family = "gaussian".
 #'
 #' @importFrom stats plogis binomial rnorm rbinom
+#' @importFrom splines bs
 #'
 #' @export
 #'
@@ -30,6 +33,7 @@
 sim_gfpca <- function(N = 500,
                       J = 100,
                       case = 1,
+                      mu = FALSE,
                       family = "binomial",
                       sigma = 2){
   #sind <- (1:J)/J
@@ -52,6 +56,13 @@ sim_gfpca <- function(N = 500,
   # calculate linear predictor \eta_i(s)
   X <- xi %*% t(phi)
 
+  if(mu){
+    BS <- splines::bs(sind, df = 9, intercept = TRUE, degree = 3)
+    coefs <- c(-2, -2, -1, 3, 1, -3, 2, 2 , -2)
+    mu <- (BS %*% coefs)
+    X <- mu + X
+  }
+
   # store in a matrix
   # change this part for simulating data from other EF families
   if(family == "binomial"){
@@ -64,6 +75,7 @@ sim_gfpca <- function(N = 500,
 
   df_gfpca <- data.frame(id = rep(1:N, each=J),
                          index = rep(sind, N),
+                         mu = rep(mu, N),
                          value = as.vector(t(Y)),
                          eta = as.vector(t(X)))
 
