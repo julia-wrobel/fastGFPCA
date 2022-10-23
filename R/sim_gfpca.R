@@ -74,7 +74,7 @@ sim_gfpca <- function(N = 500,
 
   df_gfpca <- data.frame(id = rep(1:N, each=J),
                          index = rep(sind, N),
-                         mu = rep(mu, N),
+                         mu = rep(mu_t, N),
                          value = as.vector(t(Y)),
                          eta = as.vector(t(X)))
 
