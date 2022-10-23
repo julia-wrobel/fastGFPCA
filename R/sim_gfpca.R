@@ -36,7 +36,6 @@ sim_gfpca <- function(N = 500,
                       mu = FALSE,
                       family = "binomial",
                       sigma = 2){
-  #sind <- (1:J)/J
   sind <- seq(0, 1, length.out = J)
   K    <- 4 #number of eigenfunctions
   lambdaTrue <- c(1,0.5,0.5^2,0.5^3) # True eigenvalues
@@ -59,8 +58,8 @@ sim_gfpca <- function(N = 500,
   if(mu){
     BS <- splines::bs(sind, df = 9, intercept = TRUE, degree = 3)
     coefs <- c(-2, -2, -1, 3, 1, -3, 2, 2 , -2)
-    mu <- (BS %*% coefs)
-    X <- mu + X
+    mu_t <- as.numeric(BS %*% coefs)
+    X <- t(mu_t + t(X))
   }
 
   # store in a matrix
