@@ -64,7 +64,7 @@ gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth = 10, family = "binom
 
 # binomial data, with bins that do not overlap
 df_gfpca <- sim_gfpca(N = 200, J = 200, case = 2)$df_gfpca
-gfpca_mod <- fast_gfpca(df_gfpca, overlap = FALSE, binwidth = 10, family = "binomial")
+gfpca_mod <- fast_gfpca(df_gfpca, overlap = FALSE, binwidth = 10, family = binomial)
 
 Poisson data, overlapping bins
 df_gfpca <- sim_gfpca(N = 200, J = 200, case = 1, family = "poisson")$df_gfpca

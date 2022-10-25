@@ -36,7 +36,9 @@ sim_gfpca <- function(N = 500,
                       mu = FALSE,
                       family = "binomial",
                       sigma = 2){
+
   sind <- seq(0, 1, length.out = J)
+
   K    <- 4 #number of eigenfunctions
   lambdaTrue <- c(1,0.5,0.5^2,0.5^3) # True eigenvalues
 

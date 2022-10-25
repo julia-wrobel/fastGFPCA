@@ -80,27 +80,25 @@ fast_gfpca <- function(Y,
   J <- length(unique(Y$index)) # assumes all subjects are on same even grid
 
   if(is.null(argvals)){
-    argvals = sort(unique(Y$index))
+    argvals <- sort(unique(Y$index))
   }
 
   if(overlap){
 
-
     fit_fastgfpca <- vector(mode="list",length=J)
     pb <- txtProgressBar(0, J, style=3)
     for(j in 1:J){
-      sind_j <- (j-binwidth/2):(j+binwidth/2) %% J + 1
+      sind_j <- (j-binwidth/2):(j+binwidth/2) %% J
+      sind_j[sind_j == 0] <- J
       df_j <-Y %>%
         filter(index %in% argvals[sind_j])
-        fit_j <- glmer(value ~ 1 + (1|id), data=df_j, family=family,
-                       nAGQ = 0)
-        fit_fastgfpca[[j]] <- data.frame("id" = 1:N,
+      fit_j <- glmer(value ~ 1 + (1|id), data=df_j, family=family, nAGQ = 0
+                     )
+      fit_fastgfpca[[j]] <- data.frame("id" = 1:N,
                                          "eta_i" = coef(fit_j)$id[[1]],
                                          "sind_bin" = j)
       setTxtProgressBar(pb, j)
     }
-
-
     fit_fastgfpca <- bind_rows(fit_fastgfpca)
 
     if(J/binwidth < 20){
@@ -108,6 +106,7 @@ fast_gfpca <- function(Y,
     }else{
       knots <- 20
     }
+    knots <- 20
 
     fastgfpca <- fpca.face(matrix(fit_fastgfpca$eta_i, N, J, byrow=FALSE),
                            npc=npc, pve=0.99,
