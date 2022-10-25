@@ -60,7 +60,9 @@ sim_gfpca <- function(N = 500,
     coefs <- c(-2, -2, -1, 3, 1, -3, 2, 2 , -2)
     mu_t <- as.numeric(BS %*% coefs)
     X <- t(mu_t + t(X))
-  }
+  }else(
+    mu_t = 0
+  )
 
   # store in a matrix
   # change this part for simulating data from other EF families
