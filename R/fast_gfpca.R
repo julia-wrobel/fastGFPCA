@@ -87,7 +87,11 @@ fast_gfpca <- function(Y,
 
     fit_fastgfpca <- vector(mode="list",length=J)
     pb <- txtProgressBar(0, J, style=3)
-    for(j in 1:J){
+
+    # define midpoints for overlapping bins
+    s_m  <- 1:J
+
+    for(j in s_m){
       sind_j <- (j-binwidth/2):(j+binwidth/2) %% J
       sind_j[sind_j == 0] <- J
       df_j <-Y %>%
@@ -122,11 +126,22 @@ fast_gfpca <- function(Y,
     fastgfpca$efunctions <- fastgfpca$efunctions*sqrt(J)
 
   }else{
-    # create indicator for asymmetric bins
-    bins = c(rep(1, ceiling(binwidth/2)), rep(seq(binwidth, (J-binwidth), by = binwidth),
-                                              each = binwidth),
-             rep(J, floor(binwidth/2)))
 
+
+    # define midpoints for non overlapping bins
+    s_m <- seq(1, J, by=binwidth+1)
+    #s_m[1] <- median(1:(binwidth/2 + 1))
+    #s_m[length(s_m)] <- median((J-binwidth/2):J)
+
+    #median((s_m[length(s_m)]-binwidth/2):J)
+
+    #median((s_m[length(s_m)]+binwidth/2 + 1):J)
+
+    #median((s_m[length(s_m)]):J)
+
+    # create bins
+    bins <- rep(s_m, each = binwidth + 1)
+    bins <- bins[(binwidth/2 + 1):(length(bins)-binwidth/2)]
 
     df_bin <- Y %>% mutate(sind_bin = rep(bins, N))
 
