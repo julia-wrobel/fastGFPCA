@@ -55,6 +55,8 @@
 #'
 #' @param Y dataframe with very specific column
 #' @param argvals numeric; grid over which functions are observed.  If null defaults to unique values of index.
+#' @param overlap Logical; indicates whether or not to construct overlapping bins. Defaults to FALSE
+#' @param binwidth controls the width of the bins for step 1. Must have an even integer value (defaults to 10).
 #' @param pve proportion of variance explained: used to choose the number of
 #' principal components unless `npc` is specified.
 #' @param npc how many smooth PCs to try to extract, if \code{NULL} (the
@@ -66,7 +68,7 @@
 
 fast_gfpca <- function(Y,
                        argvals = NULL, # grid for functional observations
-                       overlap = TRUE,
+                       overlap = FALSE,
                        binwidth = 10, # must be even number
                        pve = 0.99,
                        npc = NULL,
@@ -74,7 +76,10 @@ fast_gfpca <- function(Y,
                        ...){
 
   # add check that binwidth is even. If not, it will bet converted to an even number
-
+  if((binwidth %% 2) != 0) {
+    binwidth <- 2 * round(binwidth/2)
+    message(paste("binwidth should have an even integer value. Converting to a new binwidth of", binwidth))
+  }
 
   N <- length(unique(Y$id))
   J <- length(unique(Y$index)) # assumes all subjects are on same even grid
@@ -96,8 +101,7 @@ fast_gfpca <- function(Y,
       sind_j[sind_j == 0] <- J
       df_j <-Y %>%
         filter(index %in% argvals[sind_j])
-      fit_j <- glmer(value ~ 1 + (1|id), data=df_j, family=family, nAGQ = 0
-                     )
+      fit_j <- glmer(value ~ 1 + (1|id), data=df_j, family=family, nAGQ = 0)
       fit_fastgfpca[[j]] <- data.frame("id" = 1:N,
                                          "eta_i" = coef(fit_j)$id[[1]],
                                          "sind_bin" = j)
@@ -130,26 +134,25 @@ fast_gfpca <- function(Y,
 
     # define midpoints for non overlapping bins
     s_m <- seq(1, J, by=binwidth+1)
-    #s_m[1] <- median(1:(binwidth/2 + 1))
-    #s_m[length(s_m)] <- median((J-binwidth/2):J)
+    s_m[1] <- median(1:(binwidth/2 + 1))
+    last_bin <- (s_m[length(s_m)]-binwidth/2):J
+    s_m[length(s_m)] <- median(last_bin)
 
-    #median((s_m[length(s_m)]-binwidth/2):J)
 
-    #median((s_m[length(s_m)]+binwidth/2 + 1):J)
-
-    #median((s_m[length(s_m)]):J)
-
-    # create bins
-    bins <- rep(s_m, each = binwidth + 1)
-    bins <- bins[(binwidth/2 + 1):(length(bins)-binwidth/2)]
+    # create bins, which will have the following widths
+    # 1st bin: always binwidth/2 + 1
+    # last bin: between binwidth/2 + 1 and binwidth + 1 + (binwidth/2)
+    # other bins: binwidth + 1
+    bins <- rep(s_m[-length(s_m)], each = binwidth + 1)
+    bins <- bins[-c(1:(binwidth/2))]
+    bins <- c(bins, rep(s_m[length(s_m)], length.out = length(last_bin)))
 
     df_bin <- Y %>% mutate(sind_bin = rep(bins, N))
 
 
     fit_fastgfpca <- df_bin %>%
       nest_by(sind_bin) %>%
-      mutate(fit = list(glmer(value ~ 1 + (1|id), data=data, family=family,
-                              nAGQ = 0))) %>%
+      mutate(fit = list(glmer(value ~ 1 + (1|id), data=data, family=family, nAGQ = 0))) %>%
       summarize(eta_i = coef(fit)$id[[1]],
                 b_i = eta_i - fit@beta,
                 id = 1:N) %>%

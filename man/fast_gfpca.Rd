@@ -7,7 +7,7 @@
 fast_gfpca(
   Y,
   argvals = NULL,
-  overlap = TRUE,
+  overlap = FALSE,
   binwidth = 10,
   pve = 0.99,
   npc = NULL,
@@ -19,6 +19,10 @@ fast_gfpca(
 \item{Y}{dataframe with very specific column}
 
 \item{argvals}{numeric; grid over which functions are observed.  If null defaults to unique values of index.}
+
+\item{overlap}{Logical; indicates whether or not to construct overlapping bins. Defaults to FALSE}
+
+\item{binwidth}{controls the width of the bins for step 1. Must have an even integer value (defaults to 10).}
 
 \item{pve}{proportion of variance explained: used to choose the number of
 principal components unless \code{npc} is specified.}
