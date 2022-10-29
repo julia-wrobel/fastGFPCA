@@ -24,12 +24,5 @@ test_that("Function works for different links and EF families",{
   expect_equal(gfpca_mod$family$link, "log")
   expect_equal(gfpca_mod$family$family, "poisson")
 
-  gfpca_mod <- fast_gfpca(df_gfpca, overlap = FALSE, binwidth = 10,
-                          npc = 3,
-                          family = poisson(link = "log"))
-
-  expect_equal(gfpca_mod$family$link, "log")
-  expect_equal(gfpca_mod$family$family, "poisson")
-
 })
 

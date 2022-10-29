@@ -50,21 +50,14 @@ response function.}
 \item{family}{for compatibility with \code{refund.shiny} package.}
 }
 \description{
-I fast implementation of GFPCA that uses the ...
-The number of functional principal components (FPCs) can either be specified
-directly (argument \code{npc}) or chosen based on the explained share of
-variance (\code{npc_varExplained}). In the latter case, the explained share of
-variance and accordingly the number of FPCs is estimated before the main
-estimation step by once running the FPCA with \code{npc = 20} (and
-correspondingly \code{Kt = 20}). Doing so, we approximate the overall
-variance in the data \code{Y} with the variance represented by the FPC basis
-with 20 FPCs.
-}
-\details{
-Requires input data \code{Y} to be a dataframe in long format with variables
+This is the main function for the fastGFPCA package. The function requires input data \code{Y} to be a dataframe in long format with variables
 \code{id}, \code{index}, and \code{value} to indicate subject IDs,
 observation times on the domain, and observations, respectively.
 The \code{index} must contain the same, equally spaced grid points for each subject.
+The number of functional principal components (FPCs) can either be specified
+directly (argument \code{npc}) or chosen based on the explained share of
+variance (\code{pve}). Families and link functions can be specified using the same
+syntax as the \code{family} argument from the \code{lme4::glmer()} function.
 }
 \examples{
 # simulate data
