@@ -15,7 +15,7 @@
 #' poisson, or gaussian.
 #' @param sigma Defaults to 2. Error variance for Y when family = "gaussian".
 #'
-#' @importFrom stats plogis binomial rnorm rbinom
+#' @importFrom stats plogis binomial rnorm rbinom rpois
 #' @importFrom splines bs
 #'
 #' @export
@@ -36,6 +36,10 @@ sim_gfpca <- function(N = 500,
                       mu = FALSE,
                       family = "binomial",
                       sigma = 2){
+
+  if(!(family %in% c("binomial", "poisson", "gaussian"))){
+    stop('family must be "binomial", "poisson", or "gaussian" for simulated data.')
+  }
 
   sind <- seq(0, 1, length.out = J)
 

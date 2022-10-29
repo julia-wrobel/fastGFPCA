@@ -12,6 +12,7 @@ fast_gfpca(
   pve = 0.99,
   npc = NULL,
   family = "binomial",
+  periodicity = FALSE,
   ...
 )
 }
@@ -32,8 +33,9 @@ default) then npc is chosen based on \code{pve}}
 
 \item{family}{exponential family to be passed to \code{glmer} and \code{bam}.}
 
-\item{periodicity}{Option for a periodic spline basis. Defaults to FALSE.
-.}
+\item{periodicity}{Option for a periodic spline basis. Defaults to FALSE.}
+
+\item{...}{Additional arguments passed to or from other functions}
 }
 \value{
 An object of class \code{fpca} containing:
@@ -70,7 +72,7 @@ gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth = 10, family = "binom
 df_gfpca <- sim_gfpca(N = 200, J = 200, case = 2)$df_gfpca
 gfpca_mod <- fast_gfpca(df_gfpca, overlap = FALSE, binwidth = 10, family = binomial)
 
-Poisson data, overlapping bins
+# Poisson data, overlapping bins
 df_gfpca <- sim_gfpca(N = 200, J = 200, case = 1, family = "poisson")$df_gfpca
 gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth = 10, family = "poisson")
 

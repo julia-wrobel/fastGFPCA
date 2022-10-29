@@ -16,6 +16,7 @@ RoxygenNote: 7.2.1
 Suggests: 
     knitr,
     rmarkdown,
+    testthat (>= 3.0.0),
     tidyverse
 VignetteBuilder: knitr
 Imports: 
@@ -24,3 +25,4 @@ Imports:
     lme4,
     mgcv,
     refund
+Config/testthat/edition: 3

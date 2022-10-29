@@ -9,7 +9,8 @@
 #' @param argvals Full index on which to generate new basis.
 #' @param npc Number of principal components.
 #'
-#' @importFrom stats plogis binomial rnorm rbinom
+#' @importFrom stats lm
+#' @importFrom splines spline.des
 #'
 reeval_efunctions <- function(knots, argvals_bin, argvals, efunctions, npc){
 

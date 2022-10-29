@@ -15,7 +15,7 @@
 #' @author Andrew Leroux \email{andrew.leroux@@cuanschutz.edu},
 #' Julia Wrobel \email{julia.wrobel@@cuanschutz.edu}
 #' @import dplyr
-#' @importFrom stats approx binomial coef predict binomial
+#' @importFrom stats coef predict binomial lm median as.formula
 #' @importFrom refund fpca.face
 #' @importFrom lme4 glmer
 #' @importFrom utils txtProgressBar setTxtProgressBar data
@@ -49,7 +49,7 @@
 #' df_gfpca <- sim_gfpca(N = 200, J = 200, case = 2)$df_gfpca
 #' gfpca_mod <- fast_gfpca(df_gfpca, overlap = FALSE, binwidth = 10, family = binomial)
 #'
-#' Poisson data, overlapping bins
+#' # Poisson data, overlapping bins
 #' df_gfpca <- sim_gfpca(N = 200, J = 200, case = 1, family = "poisson")$df_gfpca
 #' gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth = 10, family = "poisson")
 #'
@@ -63,7 +63,7 @@
 #' default) then npc is chosen based on `pve`
 #' @param family exponential family to be passed to \code{glmer} and \code{bam}.
 #' @param periodicity Option for a periodic spline basis. Defaults to FALSE.
-#' .
+#' @param ... Additional arguments passed to or from other functions
 #'@export
 
 fast_gfpca <- function(Y,
@@ -73,6 +73,7 @@ fast_gfpca <- function(Y,
                        pve = 0.99,
                        npc = NULL,
                        family = "binomial",
+                       periodicity = FALSE,
                        ...){
 
   # add check that binwidth is even. If not, it will bet converted to an even number
@@ -99,8 +100,7 @@ fast_gfpca <- function(Y,
     for(j in s_m){
       sind_j <- (j-binwidth/2):(j+binwidth/2) %% J
       sind_j[sind_j == 0] <- J
-      df_j <-Y %>%
-        filter(index %in% argvals[sind_j])
+      df_j <- filter(Y, index %in% argvals[sind_j])
       fit_j <- glmer(value ~ 1 + (1|id), data=df_j, family=family, nAGQ = 0)
       fit_fastgfpca[[j]] <- data.frame("id" = 1:N,
                                          "eta_i" = coef(fit_j)$id[[1]],
@@ -120,7 +120,7 @@ fast_gfpca <- function(Y,
                            npc=npc, pve=0.99,
                            argvals = argvals,
                            knots=knots,lower=0,
-                           periodicity = TRUE)
+                           periodicity = periodicity)
 
     if(is.null(npc)){
       npc = fastgfpca$npc
@@ -147,7 +147,7 @@ fast_gfpca <- function(Y,
     bins <- bins[-c(1:(binwidth/2))]
     bins <- c(bins, rep(s_m[length(s_m)], length.out = length(last_bin)))
 
-    df_bin <- Y %>% mutate(sind_bin = rep(bins, N))
+    df_bin <- mutate(Y, sind_bin = rep(bins, N))
 
 
     fit_fastgfpca <- df_bin %>%
@@ -172,7 +172,7 @@ fast_gfpca <- function(Y,
                            npc = npc, pve=0.99,
                            argvals=argvals_bin,
                            knots=knots,
-                           periodicity = FALSE)
+                           periodicity = periodicity)
 
     if(is.null(npc)){
       npc = fastgfpca$npc
