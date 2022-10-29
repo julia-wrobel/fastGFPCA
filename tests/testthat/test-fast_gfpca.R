@@ -24,5 +24,6 @@ test_that("Function works for different links and EF families",{
   expect_equal(gfpca_mod$family$link, "log")
   expect_equal(gfpca_mod$family$family, "poisson")
 
+  expect_error(fast_gfpca(df_gfpca, family = "gaussian"))
 })
 
