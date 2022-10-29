@@ -69,7 +69,7 @@ fast_gfpca <- function(Y,
                        argvals = NULL, # grid for functional observations
                        overlap = FALSE,
                        binwidth = 10, # must be even number
-                       pve = 0.99,
+                       pve = NULL,
                        npc = NULL,
                        family = "binomial",
                        periodicity = FALSE,
@@ -126,7 +126,8 @@ fast_gfpca <- function(Y,
     knots <- 20
 
     fastgfpca <- fpca.face(matrix(fit_fastgfpca$eta_i, N, J, byrow=FALSE),
-                           npc=npc, pve=0.99,
+                           npc=npc,
+                           pve=pve,
                            argvals = argvals,
                            knots=knots,lower=0,
                            periodicity = periodicity)
@@ -178,7 +179,8 @@ fast_gfpca <- function(Y,
 
     argvals_bin <- sort(argvals[unique(bins)])
     fastgfpca <- fpca.face(matrix(fit_fastgfpca$eta_i, N, length(argvals_bin), byrow=FALSE),
-                           npc = npc, pve=0.99,
+                           npc = npc,
+                           pve=pve,
                            argvals=argvals_bin,
                            knots=knots,
                            periodicity = periodicity)

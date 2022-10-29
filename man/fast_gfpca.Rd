@@ -9,7 +9,7 @@ fast_gfpca(
   argvals = NULL,
   overlap = FALSE,
   binwidth = 10,
-  pve = 0.99,
+  pve = NULL,
   npc = NULL,
   family = "binomial",
   periodicity = FALSE,
