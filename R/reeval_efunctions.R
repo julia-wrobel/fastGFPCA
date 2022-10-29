@@ -28,7 +28,6 @@ reeval_efunctions <- function(knots, argvals_bin, argvals, efunctions, npc){
   Bnew <- splines::spline.des(knots = knots_values, x = argvals, ord = p + 1,
                               outer.ok = TRUE)$design
 
-
   ## project first eigenfunction onto the B spline basis used in model fitting
   efunctions_new <- matrix(NA, length(argvals), npc)
   for(k in 1:npc){

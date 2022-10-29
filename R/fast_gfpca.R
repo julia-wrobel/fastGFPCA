@@ -10,7 +10,10 @@
 #' variance in the data \code{Y} with the variance represented by the FPC basis
 #' with 20 FPCs.
 #'
-
+#' Requires input data \code{Y} to be a dataframe in long format with variables
+#' \code{id}, \code{index}, and \code{value} to indicate subject IDs,
+#' observation times on the domain, and observations, respectively.
+#' The \code{index} must contain the same, equally spaced grid points for each subject.
 #'
 #' @author Andrew Leroux \email{andrew.leroux@@cuanschutz.edu},
 #' Julia Wrobel \email{julia.wrobel@@cuanschutz.edu}
@@ -41,22 +44,18 @@
 #' # simulate data
 #' set.seed(1001)
 #'
-#' # binomial data, with overlapping bins
-#' df_gfpca <- sim_gfpca(N = 200, J = 200, case = 1)$df_gfpca
-#' gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth = 10, family = "binomial")
-#'
 #' # binomial data, with bins that do not overlap
 #' df_gfpca <- sim_gfpca(N = 200, J = 200, case = 2)$df_gfpca
 #' gfpca_mod <- fast_gfpca(df_gfpca, overlap = FALSE, binwidth = 10, family = binomial)
 #'
 #' # Poisson data, overlapping bins
-#' df_gfpca <- sim_gfpca(N = 200, J = 200, case = 1, family = "poisson")$df_gfpca
-#' gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth = 10, family = "poisson")
+#' df_gfpca <- sim_gfpca(N = 100, J = 100, case = 1, family = "poisson")$df_gfpca
+#' gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth =6, family = "poisson")
 #'
-#' @param Y dataframe with very specific column
+#' @param Y Dataframe. Should have variables id, value, index.
 #' @param argvals numeric; grid over which functions are observed.  If null defaults to unique values of index.
 #' @param overlap Logical; indicates whether or not to construct overlapping bins. Defaults to FALSE
-#' @param binwidth controls the width of the bins for step 1. Must have an even integer value (defaults to 10).
+#' @param binwidth controls the width of the bins for step 1. Must have an even integer value (defaults to 10). Can be no more than J/10.
 #' @param pve proportion of variance explained: used to choose the number of
 #' principal components unless `npc` is specified.
 #' @param npc how many smooth PCs to try to extract, if \code{NULL} (the
@@ -76,14 +75,24 @@ fast_gfpca <- function(Y,
                        periodicity = FALSE,
                        ...){
 
-  # add check that binwidth is even. If not, it will bet converted to an even number
-  if((binwidth %% 2) != 0) {
-    binwidth <- 2 * round(binwidth/2)
-    message(paste("binwidth should have an even integer value. Converting to a new binwidth of", binwidth))
+
+  if(!all(c("id", "value", "index") %in% ls(Y))){
+    stop('Y must be a dataframe containing variables "id", "index", and "value".')
   }
 
   N <- length(unique(Y$id))
   J <- length(unique(Y$index)) # assumes all subjects are on same even grid
+
+  # add check that binwidth is even. If not, it will bet converted to an even number
+  if(J/binwidth < 10){
+    binwidth = J/10
+    message(paste0("binwidth should be no more than J/10. Converting to a new binwidth of ", binwidth, "."))
+  }
+  if((binwidth %% 2) != 0) {
+    binwidth <- 2 * round(binwidth/2)
+    message(paste0("binwidth should have an even integer value. Converting to a new binwidth of ", binwidth, "."))
+  }
+
 
   if(is.null(argvals)){
     argvals <- sort(unique(Y$index))
@@ -161,7 +170,7 @@ fast_gfpca <- function(Y,
     # do FPCA on the local estimates \tilde{\eta_i(s)}
     # knots will be given by bindwidth for smaller values of D
     # need to edit number of knots here
-    if(J/binwidth <= 40){
+    if(J/binwidth <= 40 + 10){
       knots <- ceiling(J/binwidth/2)
     }else{
       knots <- 40
