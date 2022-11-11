@@ -56,9 +56,9 @@ sim_gfpca <- function(N = 500,
   }
 
   # orthogonalize PCs
-  psi_svd = svd(phi)
-  phi = psi_svd$u * sqrt(J)
-  evalues = ( psi_svd$d ) ^ 2
+  # psi_svd = svd(phi)
+  # phi = psi_svd$u * sqrt(J)
+  # evalues = ( psi_svd$d ) ^ 2
 
   # simulate \xi_ik
   xi <- matrix(rnorm(N*K),N,K)

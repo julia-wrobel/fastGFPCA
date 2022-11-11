@@ -9,8 +9,11 @@ vignette: >
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
+  collapse  = TRUE,
+  comment   = "#>",
+  message   = FALSE,
+  warning   = FALSE,
+  fig.width = 6
 )
 ```
 
@@ -62,7 +65,7 @@ The argument `family` defines the outcome distribution of the observed data.The 
 
 ```{r sim_data}
 # simulate data
-set.seed(13333)
+set.seed(133233)
 bin_sim <- sim_gfpca(N = 50, J = 200, case = 1, family = "binomial", mu = FALSE)
 
 ls(bin_sim)
@@ -86,7 +89,7 @@ The following code uses a binomial family with `logit` link.
 ```{r gfpca_bin, message = FALSE}
 
 # run fast gfpca model
-bin_mod <- fast_gfpca(Y = bin_sim$df_gfpca, overlap = TRUE, binwidth = 10, npc = 4,
+bin_mod <- fast_gfpca(Y = bin_sim$df_gfpca, overlap = TRUE, binwidth = 20, npc = 4,
                       family = "binomial")
 
 
@@ -107,7 +110,7 @@ probit_mod$family
 
 The plots below show the estimated principal components for the `logit` and `probit` binary FPCA models. 
 
-```{r plot_bFPCA}
+```{r plot_bFPCA, echo = FALSE, fig.show='hold'}
 
 flip_efunctions = function(data){
   if(data[["logit_mod"]] %*% data[["truth"]] < 0){
