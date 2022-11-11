@@ -97,7 +97,7 @@ fast_gfpca <- function(Y,
   if(overlap){
 
     fit_fastgfpca <- vector(mode="list",length=J)
-    pb <- txtProgressBar(0, J, style=3)
+    #pb <- txtProgressBar(0, J, style=3)
 
     # define midpoints for overlapping bins
     s_m  <- 1:J
@@ -110,7 +110,7 @@ fast_gfpca <- function(Y,
       fit_fastgfpca[[j]] <- data.frame("id" = 1:N,
                                          "eta_i" = coef(fit_j)$id[[1]],
                                          "sind_bin" = j)
-      setTxtProgressBar(pb, j)
+      #setTxtProgressBar(pb, j)
     }
     fit_fastgfpca <- bind_rows(fit_fastgfpca)
 

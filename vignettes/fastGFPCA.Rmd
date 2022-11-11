@@ -46,7 +46,7 @@ Use of this package requires that data be in a specific format: a long-form data
 
 The variable `id` should be a unique identifier in that each id identifies a single subject. Since we assume there is only one curve per subject for this package, `id` uniquely identifies each curve as well. Other covariates can be included in the data as long as the variables `id`, `index`, and `value` are present.
 
-```{r load_libraries}
+```{r load_libraries, message = FALSE}
 library(fastGFPCA)
 library(tidyverse)
 theme_set(theme_bw())
@@ -58,7 +58,7 @@ theme_set(theme_bw())
 
 `sim_gfpca()` generates curves with a population mean, $K = 4$ functional principal components, and true eigenvalues $\lambda_k = 0.5^{k-1}; k = 1,2,3,4$. When function argument `case = 1`, the true eigenfunctions are periodic and defined by $\boldsymbol{\phi}(s) = \{\sqrt{2}sin(2\pi s), \sqrt{2}cos(2\pi s), \sqrt{2}sin(4\pi s), \sqrt{2}cos(4\pi s)\}$. When `case = 2`, eigenfunctions are non-periodic and given by $\boldsymbol{\phi}(s) = \{1, \sqrt{3}(2s-1), \sqrt{5}(6s^2-6s + 1), \sqrt{7}(20s^3-30s^2+12s-1)\}.$
 
-The argument `family` defines the outcome distribution of the observed data.The code below generates non-periodic binary functional data with $N = 100$ subjects and $J = 200$ grid points.
+The argument `family` defines the outcome distribution of the observed data.The code below generates periodic binary functional data with $N = 100$ subjects and $J = 200$ grid points.
 
 ```{r sim_data}
 # simulate data
@@ -71,7 +71,7 @@ ls(bin_sim)
 The resulting data object,`bin_sim`, is a list with values `df_gfpca`, `lambda`, `phi`, and `scores`.  `bin_sim$df_gfpca` is a data frame with variables `id`, `value`, `index`, `mu`, and `eta`, which is consistent with the format our `fastGFPCA` software requires. `id` is the identifier for a particular subject, the `value` variable contains binary observations, and `eta` contains continuous observations used to generate the binary observations for the `value` variable. The variable `mu` is the value of the population-level mean, $\mu(t)$.
 
 
-## Binary FPCA
+## Binary fPCA
 
 `fast_gfpca()` is the main function for the `fastGFPCA` package. The key arguments for this function are listed below.
 
@@ -81,13 +81,13 @@ The resulting data object,`bin_sim`, is a list with values `df_gfpca`, `lambda`,
 * `npc` indicates the number of functional principal components to use. The latter can also be chosen based on an explained share of variance, see argument `pve`.
 * `family` is used to specify what type of exponential family functional distribution and link function you would like to use for your data. This parameter is fed to the the functions `glm::glmer()` and `mgcv::bam()`; see the help files for these functions for which types of families and link functions are supported.
 
-The following code uses a binomial family with logit link.
+The following code uses a binomial family with `logit` link.
 
-```{r gfpca_bin}
+```{r gfpca_bin, message = FALSE}
 
 # run fast gfpca model
 bin_mod <- fast_gfpca(Y = bin_sim$df_gfpca, overlap = TRUE, binwidth = 10, npc = 4,
-                      family = binomial)
+                      family = "binomial")
 
 
 bin_mod$family
@@ -95,7 +95,7 @@ bin_mod$family
 
 
 
-We could instead uses a binomial family with probit link; this is implemented below.
+We could instead uses a binomial family with `probit` link; this is implemented below.
 
 ```{r gfpca_probit}
 probit_mod <- fast_gfpca(Y = bin_sim$df_gfpca, overlap = FALSE, binwidth = 10, npc = 4,
@@ -141,34 +141,48 @@ phi_df %>%
 
 ```
 
-## Poisson FPCA
+## Poisson fPCA
 
-Outcome is count data simulated from a Poisson distribution.
+The `fast_gfpca()` function can also perform Poisson FPCA on count outcomes. The code below simulates non-periodic Poisson functional data and performs Poisson FPCA. 
 
-
-
-```{r}
+```{r pois_mod}
 # simulate data
-count_sim <- sim_gfpca(N = 200, J = 200, case = 1, family = "poisson")
+count_sim <- sim_gfpca(N = 50, J = 200, case = 2, family = "poisson")
 
-count_mod <- fast_gfpca(count_sim$df_gfpca, overlap = TRUE, binwidth = 10, npc = 4,
+count_mod <- fast_gfpca(count_sim$df_gfpca, overlap = FALSE, binwidth = 20, npc = 4,
                         family = "poisson")
 
 count_mod$family
 ```
 
+The plot below shows latent subject-specific means on the linear predictor scale, $\mu(s) + \sum_{k = 1}^K \xi_{ik}\phi_k(s)$, for three subjects in the simulated Poisson dataset. True values are black solid lines while GFPCA estimates are pink dotted lines.
+
+
+```{r plot_pFPCA}
+
+count_sim$df_gfpca %>%
+  mutate(eta_hat = as.vector(t(count_mod$Yhat))) %>%
+  filter(id %in% c(1,2, 8)) %>%
+  ggplot(aes(index, eta)) +
+  geom_line() +
+  geom_line(aes(y = eta_hat), linetype = 2, color = "pink") +
+  facet_wrap(~id)
+```
 
 ## Tuning parameters
 
+The main tuning parameter for this package is the `binwidth` parameter. When `overlap = FALSE`, we recommend a smaller binwidth than when `overlap = TRUE`.
+
 ##  Interactive visualization
 
-Using `refund.shiny` package
+The results of `fast_gfpca` can be interactively visualized using `refund.shiny` package by running the code below.
 
 ```{r, eval = FALSE}
 library(refund.shiny)
 
-bfpca_mod$Y <- bin_sim$df_gfpca
-plot_shiny(bfpca_mod)
+bin_mod$Y <- bin_sim$df_gfpca
+bin_mod$family = "binomial"
+plot_shiny(bin_mod)
 
 ```
 

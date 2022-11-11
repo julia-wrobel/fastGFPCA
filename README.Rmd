@@ -32,6 +32,10 @@ You can install the development version of fastGFPCA from [GitHub](https://githu
 ``` r
 # install.packages("devtools")
 devtools::install_github("julia-wrobel/fastGFPCA")
+
+
+# build vignette with installation
+devtools::install_github("julia-wrobel/fastGFPCA", build_vignettes = TRUE)
 ```
 
 ## Example
