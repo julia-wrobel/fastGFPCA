@@ -55,11 +55,17 @@ sim_gfpca <- function(N = 500,
                  sqrt(7)*(20*sind^3-30*sind^2+12*sind-1))
   }
 
+  # orthogonalize PCs
+  psi_svd = svd(phi)
+  phi = psi_svd$u * sqrt(J)
+  evalues = ( psi_svd$d ) ^ 2
+
   # simulate \xi_ik
   xi <- matrix(rnorm(N*K),N,K)
   xi <- xi %*% diag(sqrt(lambdaTrue))
   # calculate linear predictor \eta_i(s)
   X <- xi %*% t(phi)
+
 
   if(mu){
     BS <- splines::bs(sind, df = 9, intercept = TRUE, degree = 3)
@@ -71,7 +77,6 @@ sim_gfpca <- function(N = 500,
   )
 
   # store in a matrix
-  # change this part for simulating data from other EF families
   if(family == "binomial"){
     Y <- matrix(rbinom(N*J, size=1, prob=plogis(X)), N, J, byrow=F)
   }else if(family == "poisson"){
@@ -79,6 +84,9 @@ sim_gfpca <- function(N = 500,
   }else if(family == "gaussian"){
     Y <- X + sigma*matrix(rnorm(N*J),N,J)
   }
+
+
+
 
   df_gfpca <- data.frame(id = rep(1:N, each=J),
                          index = rep(sind, N),

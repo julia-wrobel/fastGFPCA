@@ -63,7 +63,7 @@ The argument `family` defines the outcome distribution of the observed data.The 
 ```{r sim_data}
 # simulate data
 set.seed(13333)
-bin_sim <- sim_gfpca(N = 50, J = 200, case = 2, family = "binomial", mu = FALSE)
+bin_sim <- sim_gfpca(N = 50, J = 200, case = 1, family = "binomial", mu = FALSE)
 
 ls(bin_sim)
 ```
@@ -86,7 +86,7 @@ The following code uses a binomial family with logit link.
 ```{r gfpca_bin}
 
 # run fast gfpca model
-bin_mod <- fast_gfpca(Y = bin_sim$df_gfpca, overlap = FALSE, binwidth = 10, npc = 4,
+bin_mod <- fast_gfpca(Y = bin_sim$df_gfpca, overlap = TRUE, binwidth = 10, npc = 4,
                       family = binomial)
 
 
@@ -97,7 +97,7 @@ bin_mod$family
 
 We could instead uses a binomial family with probit link; this is implemented below.
 
-```{r, gfpca_probit}
+```{r gfpca_probit}
 probit_mod <- fast_gfpca(Y = bin_sim$df_gfpca, overlap = FALSE, binwidth = 10, npc = 4,
                           family = binomial(link = "probit"))
 
@@ -105,27 +105,43 @@ probit_mod$family
 ```
 
 
-```{r}
-tibble(s = rep(seq(0, 1, length.out = 200), 4),
-       k = rep(1:4, each = 200),
-       truth = c(bin_sim$phi),
-       logit_mod = c(bin_mod$efunctions),
-       probit_mod = c(probit_mod$efunctions)) %>%
+The plots below show the estimated principal components for the `logit` and `probit` binary FPCA models. 
+
+```{r plot_bFPCA}
+
+flip_efunctions = function(data){
+  if(data[["logit_mod"]] %*% data[["truth"]] < 0){
+    data[["logit_mod"]] = -1 * data[["logit_mod"]]
+  }
+  if(data[["probit_mod"]] %*% data[["truth"]] < 0){
+    data[["probit_mod"]] = -1 * data[["probit_mod"]]
+  }
+  
+  data
+}
+
+phi_df = tibble(s = rep(seq(0, 1, length.out = 200), 4),
+                k = rep(paste0("eigenfunction ",1:4), each = 200),
+                truth = c(bin_sim$phi),
+                logit_mod = c(bin_mod$efunctions),
+                probit_mod = c(probit_mod$efunctions)) %>%
+  nest_by(k) 
+
+new_phi = map(phi_df$data, flip_efunctions)
+phi_df$new_phi <- new_phi
+
+phi_df %>%
+  select(-data) %>%
+  unnest(new_phi) %>%
+  ungroup() %>% 
   pivot_longer(truth:probit_mod, names_to = "model", values_to = "value") %>%
   ggplot(aes(s, value, group = model, color = model, linetype = model)) +
   geom_line() +
   facet_wrap(~k)
 
-
-
 ```
 
-
-
-
-Underlying probabilities of the binary data are plotted above. At left probabilities on unregistered domain $t^*$, center are probabilities on true registered domain $t$, and at right are probabilities on estimated registered domain $\widehat{t}$. After registration the underlying probabilities are aligned -- though it is important to note that the algorithm registers based on the underlying binary observations, not the true probabilities.
-
-## Count data
+## Poisson FPCA
 
 Outcome is count data simulated from a Poisson distribution.
 
