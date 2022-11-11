@@ -9,8 +9,8 @@
 #' @param case Takes on values of 1 or 2. If case = 1 true eigenfunctions
 #' are based on alternating sine and cosines. If case = 2 true eigenfunctions are
 #' based on sqrt functions.
-#' @param mu Logical to indicate if a mean function should be included in the simulated data. Defaults to false (mu = 0).
-#' If TRUE, a mean function is constructed using B-splines.
+#' @param mu Logical to indicate if a mean function should be included in the simulated data. Defaults to TRUE.
+#' If TRUE, a mean function is constructed using B-splines. If FALSE, mu = 0.
 #' @param family Defines exponential family for generating data. Options are binomial (default),
 #' poisson, or gaussian.
 #' @param sigma Defaults to 2. Error variance for Y when family = "gaussian".
@@ -33,7 +33,7 @@
 sim_gfpca <- function(N = 500,
                       J = 100,
                       case = 1,
-                      mu = FALSE,
+                      mu = TRUE,
                       family = "binomial",
                       sigma = 2){
 

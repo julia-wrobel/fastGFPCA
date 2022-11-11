@@ -76,10 +76,6 @@ fast_gfpca <- function(Y,
     stop('Y must be a dataframe containing variables "id", "index", and "value".')
   }
 
-  if(family %in% c("gaussian", gaussian)){
-    stop('For non-generalized fpca please directly use the "fpca.face" function from the "refund" package.')
-  }
-
   N <- length(unique(Y$id))
   J <- length(unique(Y$index)) # assumes all subjects are on same even grid
 

@@ -1,5 +1,5 @@
 ---
-title: "fastGFPCA"
+title: "fastGFPCA: a vignette"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{fastGFPCA}
@@ -14,40 +14,116 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r setup}
-library(fastGFPCA)
-library(tidyverse)
+The `fastGFPCA` package is for performing functional principal components analysis on exponential family functional data. This vignette outlines the general functionality of the package. The main  function in the package is called `fast_gfpca()`. An additional function called `sim_gfpca()` can be used to simulate binary, count, or normally distributed functional observations. 
+
+Currently, the package is designed to handle only dense functional data where each subject is observed on the same grid of regularly spaced points along the domain. In the future the package will be expanded to handle sparse and irregular functional observations.
+
+
+# The `fastGFPCA` model and algorithm 
+
+The model for generalized functional principal components analysis is 
+
+$$
+g\left(E[Z_i(s)|\phi(s)]\right) = \mu(s) + \sum_{k = 1}^K \xi_{ik}\phi_k(s),
+$$
+
+
+where $Z_i(s)$ is the observed data at time $s$ for subject $i$, $\xi_{ik}\sim N(0, \lambda_k)$ are mutually independent subject-specific scores, and $\mu(s)$ and $\phi_k(s); k\in 1,\ldots,K$ are the population-level mean and eigenfunctions, respectively.
+
+
+```{r, eval = FALSE, echo = FALSE}
+# add this when the paper is live
+The methods implemented in `registr` are described in more detail in this [paper](http://juliawrobel.com/Downloads/registration_ef.pdf).
+
 ```
 
 
-## Binary data
+# The `fastGFPCA` package
 
-Simulate data that has periodic endpoints with 200 subjects and 100 timepoints
+## A note on data formatting
 
-```{r}
+Use of this package requires that data be in a specific format: a long-form data frame with variables `id`, `index`, and `value`, where the `value` column contains functional observations for all subjects, the `id` column identifies which observations belong to which subject, and `index` provides the grid (domain) over which the `value`s are observed.  
+
+The variable `id` should be a unique identifier in that each id identifies a single subject. Since we assume there is only one curve per subject for this package, `id` uniquely identifies each curve as well. Other covariates can be included in the data as long as the variables `id`, `index`, and `value` are present.
+
+```{r load_libraries}
+library(fastGFPCA)
+library(tidyverse)
+theme_set(theme_bw())
+```
+
+
+
+## Simulate data for generalized fPCA
+
+`sim_gfpca()` generates curves with a population mean, $K = 4$ functional principal components, and true eigenvalues $\lambda_k = 0.5^{k-1}; k = 1,2,3,4$. When function argument `case = 1`, the true eigenfunctions are periodic and defined by $\boldsymbol{\phi}(s) = \{\sqrt{2}sin(2\pi s), \sqrt{2}cos(2\pi s), \sqrt{2}sin(4\pi s), \sqrt{2}cos(4\pi s)\}$. When `case = 2`, eigenfunctions are non-periodic and given by $\boldsymbol{\phi}(s) = \{1, \sqrt{3}(2s-1), \sqrt{5}(6s^2-6s + 1), \sqrt{7}(20s^3-30s^2+12s-1)\}.$
+
+The argument `family` defines the outcome distribution of the observed data.The code below generates non-periodic binary functional data with $N = 100$ subjects and $J = 200$ grid points.
+
+```{r sim_data}
 # simulate data
-bin_sim <- sim_gfpca(N = 100, J = 100, case = 1)
+set.seed(13333)
+bin_sim <- sim_gfpca(N = 50, J = 200, case = 2, family = "binomial", mu = FALSE)
 
-bin_mod <- fast_gfpca(bin_sim$df_gfpca, overlap = TRUE, binwidth = 5, npc = 4,
+ls(bin_sim)
+```
+
+The resulting data object,`bin_sim`, is a list with values `df_gfpca`, `lambda`, `phi`, and `scores`.  `bin_sim$df_gfpca` is a data frame with variables `id`, `value`, `index`, `mu`, and `eta`, which is consistent with the format our `fastGFPCA` software requires. `id` is the identifier for a particular subject, the `value` variable contains binary observations, and `eta` contains continuous observations used to generate the binary observations for the `value` variable. The variable `mu` is the value of the population-level mean, $\mu(t)$.
+
+
+## Binary FPCA
+
+`fast_gfpca()` is the main function for the `fastGFPCA` package. The key arguments for this function are listed below.
+
+*  `Y` specifies the input dataset
+* `overlap` defines whether bins will be constructed with overlap. When observed functional data are periodic, overlapping bins can be used by setting `overlap = TRUE`. When data are not periodic, we recommend using `overlap = FALSE`.
+* `binwidth` determines the width of bins. Should be a positive integer value of $\le J/10$.
+* `npc` indicates the number of functional principal components to use. The latter can also be chosen based on an explained share of variance, see argument `pve`.
+* `family` is used to specify what type of exponential family functional distribution and link function you would like to use for your data. This parameter is fed to the the functions `glm::glmer()` and `mgcv::bam()`; see the help files for these functions for which types of families and link functions are supported.
+
+The following code uses a binomial family with logit link.
+
+```{r gfpca_bin}
+
+# run fast gfpca model
+bin_mod <- fast_gfpca(Y = bin_sim$df_gfpca, overlap = FALSE, binwidth = 10, npc = 4,
                       family = binomial)
 
 
 bin_mod$family
-bin_mod$time_step2
-bin_mod$time_step4
-# visualize results in some way 
 ```
 
 
-Probit link
 
-```{r}
-binprob_mod <- fast_gfpca(bin_sim$df_gfpca, overlap = TRUE, binwidth = 10, npc = 5,
+We could instead uses a binomial family with probit link; this is implemented below.
+
+```{r, gfpca_probit}
+probit_mod <- fast_gfpca(Y = bin_sim$df_gfpca, overlap = FALSE, binwidth = 10, npc = 4,
                           family = binomial(link = "probit"))
 
-binprob_mod$family
+probit_mod$family
 ```
 
+
+```{r}
+tibble(s = rep(seq(0, 1, length.out = 200), 4),
+       k = rep(1:4, each = 200),
+       truth = c(bin_sim$phi),
+       logit_mod = c(bin_mod$efunctions),
+       probit_mod = c(probit_mod$efunctions)) %>%
+  pivot_longer(truth:probit_mod, names_to = "model", values_to = "value") %>%
+  ggplot(aes(s, value, group = model, color = model, linetype = model)) +
+  geom_line() +
+  facet_wrap(~k)
+
+
+
+```
+
+
+
+
+Underlying probabilities of the binary data are plotted above. At left probabilities on unregistered domain $t^*$, center are probabilities on true registered domain $t$, and at right are probabilities on estimated registered domain $\widehat{t}$. After registration the underlying probabilities are aligned -- though it is important to note that the algorithm registers based on the underlying binary observations, not the true probabilities.
 
 ## Count data
 
@@ -65,6 +141,8 @@ count_mod <- fast_gfpca(count_sim$df_gfpca, overlap = TRUE, binwidth = 10, npc =
 count_mod$family
 ```
 
+
+## Tuning parameters
 
 ##  Interactive visualization
 
