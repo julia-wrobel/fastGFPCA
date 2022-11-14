@@ -76,6 +76,14 @@ fast_gfpca <- function(Y,
     stop('Y must be a dataframe containing variables "id", "index", and "value".')
   }
 
+  # sort data by id and index
+  Y = Y[order(Y$id, Y$index),]
+
+  if(is.null(npc) & is.null(pve)){
+    pve = 0.95
+    message("Setting pve = 0.95")
+  }
+
   N <- length(unique(Y$id))
   J <- length(unique(Y$index)) # assumes all subjects are on same even grid
 
@@ -196,7 +204,7 @@ fast_gfpca <- function(Y,
   Y$id_fac <- factor(Y$id)
   gam_formula = "value ~ s(index, k=10)"
   for(i in 1:npc){
-    Y[[paste0("Phi", i)]] <- fastgfpca$efunctions[,i]
+    Y[[paste0("Phi", i)]] <- rep(fastgfpca$efunctions[,i], N)
     gam_formula = paste0(gam_formula, " + s(id_fac, by=Phi",i,", bs= 're')")
   }
 

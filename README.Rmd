@@ -50,7 +50,8 @@ set.seed(10001)
 df_gfpca <- sim_gfpca(N = 50, J = 500, case = 1)$df_gfpca
 
 # run gfpca
-gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth = 10, npc = 4, family = "binomial")
+bin_mod <- fast_gfpca(Y = df_gfpca, overlap = TRUE, binwidth = 20, npc = 4, family = "binomial")
+
 ```
 
 
