@@ -9,20 +9,21 @@ fast_gfpca(
   argvals = NULL,
   overlap = FALSE,
   binwidth = 10,
-  pve = 0.99,
+  pve = NULL,
   npc = NULL,
-  family = "binomial",
+  family,
+  periodicity = FALSE,
   ...
 )
 }
 \arguments{
-\item{Y}{dataframe with very specific column}
+\item{Y}{Dataframe. Should have variables id, value, index.}
 
 \item{argvals}{numeric; grid over which functions are observed.  If null defaults to unique values of index.}
 
 \item{overlap}{Logical; indicates whether or not to construct overlapping bins. Defaults to FALSE}
 
-\item{binwidth}{controls the width of the bins for step 1. Must have an even integer value (defaults to 10).}
+\item{binwidth}{controls the width of the bins for step 1. Must have an even integer value (defaults to 10). Can be no more than J/10.}
 
 \item{pve}{proportion of variance explained: used to choose the number of
 principal components unless \code{npc} is specified.}
@@ -32,8 +33,9 @@ default) then npc is chosen based on \code{pve}}
 
 \item{family}{exponential family to be passed to \code{glmer} and \code{bam}.}
 
-\item{periodicity}{Option for a periodic spline basis. Defaults to FALSE.
-.}
+\item{periodicity}{Option for a periodic spline basis. Defaults to FALSE.}
+
+\item{...}{Additional arguments passed to or from other functions}
 }
 \value{
 An object of class \code{fpca} containing:
@@ -48,31 +50,26 @@ response function.}
 \item{family}{for compatibility with \code{refund.shiny} package.}
 }
 \description{
-I fast implementation of GFPCA that uses the ...
+This is the main function for the fastGFPCA package. The function requires input data \code{Y} to be a dataframe in long format with variables
+\code{id}, \code{index}, and \code{value} to indicate subject IDs,
+observation times on the domain, and observations, respectively.
+The \code{index} must contain the same, equally spaced grid points for each subject.
 The number of functional principal components (FPCs) can either be specified
 directly (argument \code{npc}) or chosen based on the explained share of
-variance (\code{npc_varExplained}). In the latter case, the explained share of
-variance and accordingly the number of FPCs is estimated before the main
-estimation step by once running the FPCA with \code{npc = 20} (and
-correspondingly \code{Kt = 20}). Doing so, we approximate the overall
-variance in the data \code{Y} with the variance represented by the FPC basis
-with 20 FPCs.
+variance (\code{pve}). Families and link functions can be specified using the same
+syntax as the \code{family} argument from the \code{lme4::glmer()} function.
 }
 \examples{
 # simulate data
 set.seed(1001)
 
-# binomial data, with overlapping bins
-df_gfpca <- sim_gfpca(N = 200, J = 200, case = 1)$df_gfpca
-gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth = 10, family = "binomial")
-
 # binomial data, with bins that do not overlap
 df_gfpca <- sim_gfpca(N = 200, J = 200, case = 2)$df_gfpca
 gfpca_mod <- fast_gfpca(df_gfpca, overlap = FALSE, binwidth = 10, family = binomial)
 
-Poisson data, overlapping bins
-df_gfpca <- sim_gfpca(N = 200, J = 200, case = 1, family = "poisson")$df_gfpca
-gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth = 10, family = "poisson")
+# Poisson data, overlapping bins
+df_gfpca <- sim_gfpca(N = 100, J = 100, case = 1, family = "poisson")$df_gfpca
+gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth =6, family = "poisson")
 
 }
 \references{

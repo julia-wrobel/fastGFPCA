@@ -9,7 +9,8 @@
 #' @param argvals Full index on which to generate new basis.
 #' @param npc Number of principal components.
 #'
-#' @importFrom stats plogis binomial rnorm rbinom
+#' @importFrom stats lm
+#' @importFrom splines spline.des
 #'
 reeval_efunctions <- function(knots, argvals_bin, argvals, efunctions, npc){
 
@@ -26,7 +27,6 @@ reeval_efunctions <- function(knots, argvals_bin, argvals, efunctions, npc){
 
   Bnew <- splines::spline.des(knots = knots_values, x = argvals, ord = p + 1,
                               outer.ok = TRUE)$design
-
 
   ## project first eigenfunction onto the B spline basis used in model fitting
   efunctions_new <- matrix(NA, length(argvals), npc)

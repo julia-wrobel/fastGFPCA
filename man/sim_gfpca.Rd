@@ -8,7 +8,7 @@ sim_gfpca(
   N = 500,
   J = 100,
   case = 1,
-  mu = FALSE,
+  mu = TRUE,
   family = "binomial",
   sigma = 2
 )
@@ -22,8 +22,8 @@ sim_gfpca(
 are based on alternating sine and cosines. If case = 2 true eigenfunctions are
 based on sqrt functions.}
 
-\item{mu}{Logical to indicate if a mean function should be included in the simulated data. Defaults to false (mu = 0).
-If TRUE, a mean function is constructed using B-splines.}
+\item{mu}{Logical to indicate if a mean function should be included in the simulated data. Defaults to TRUE.
+If TRUE, a mean function is constructed using B-splines. If FALSE, mu = 0.}
 
 \item{family}{Defines exponential family for generating data. Options are binomial (default),
 poisson, or gaussian.}

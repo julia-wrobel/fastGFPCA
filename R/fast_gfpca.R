@@ -1,21 +1,20 @@
 #' Fast generalized functional principal components analysis
 #'
-#' I fast implementation of GFPCA that uses the ...
+#' This is the main function for the fastGFPCA package. The function requires input data \code{Y} to be a dataframe in long format with variables
+#' \code{id}, \code{index}, and \code{value} to indicate subject IDs,
+#' observation times on the domain, and observations, respectively.
+#' The \code{index} must contain the same, equally spaced grid points for each subject.
+
 #' The number of functional principal components (FPCs) can either be specified
 #' directly (argument \code{npc}) or chosen based on the explained share of
-#' variance (\code{npc_varExplained}). In the latter case, the explained share of
-#' variance and accordingly the number of FPCs is estimated before the main
-#' estimation step by once running the FPCA with \code{npc = 20} (and
-#' correspondingly \code{Kt = 20}). Doing so, we approximate the overall
-#' variance in the data \code{Y} with the variance represented by the FPC basis
-#' with 20 FPCs.
+#' variance (\code{pve}). Families and link functions can be specified using the same
+#' syntax as the \code{family} argument from the \code{lme4::glmer()} function.
 #'
-
 #'
 #' @author Andrew Leroux \email{andrew.leroux@@cuanschutz.edu},
 #' Julia Wrobel \email{julia.wrobel@@cuanschutz.edu}
 #' @import dplyr
-#' @importFrom stats approx binomial coef predict binomial
+#' @importFrom stats coef predict binomial lm median as.formula
 #' @importFrom refund fpca.face
 #' @importFrom lme4 glmer
 #' @importFrom utils txtProgressBar setTxtProgressBar data
@@ -41,48 +40,63 @@
 #' # simulate data
 #' set.seed(1001)
 #'
-#' # binomial data, with overlapping bins
-#' df_gfpca <- sim_gfpca(N = 200, J = 200, case = 1)$df_gfpca
-#' gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth = 10, family = "binomial")
-#'
 #' # binomial data, with bins that do not overlap
 #' df_gfpca <- sim_gfpca(N = 200, J = 200, case = 2)$df_gfpca
 #' gfpca_mod <- fast_gfpca(df_gfpca, overlap = FALSE, binwidth = 10, family = binomial)
 #'
-#' Poisson data, overlapping bins
-#' df_gfpca <- sim_gfpca(N = 200, J = 200, case = 1, family = "poisson")$df_gfpca
-#' gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth = 10, family = "poisson")
+#' # Poisson data, overlapping bins
+#' df_gfpca <- sim_gfpca(N = 100, J = 100, case = 1, family = "poisson")$df_gfpca
+#' gfpca_mod <- fast_gfpca(df_gfpca, overlap = TRUE, binwidth =6, family = "poisson")
 #'
-#' @param Y dataframe with very specific column
+#' @param Y Dataframe. Should have variables id, value, index.
 #' @param argvals numeric; grid over which functions are observed.  If null defaults to unique values of index.
 #' @param overlap Logical; indicates whether or not to construct overlapping bins. Defaults to FALSE
-#' @param binwidth controls the width of the bins for step 1. Must have an even integer value (defaults to 10).
+#' @param binwidth controls the width of the bins for step 1. Must have an even integer value (defaults to 10). Can be no more than J/10.
 #' @param pve proportion of variance explained: used to choose the number of
 #' principal components unless `npc` is specified.
 #' @param npc how many smooth PCs to try to extract, if \code{NULL} (the
 #' default) then npc is chosen based on `pve`
 #' @param family exponential family to be passed to \code{glmer} and \code{bam}.
 #' @param periodicity Option for a periodic spline basis. Defaults to FALSE.
-#' .
+#' @param ... Additional arguments passed to or from other functions
 #'@export
 
 fast_gfpca <- function(Y,
                        argvals = NULL, # grid for functional observations
                        overlap = FALSE,
                        binwidth = 10, # must be even number
-                       pve = 0.99,
+                       pve = NULL,
                        npc = NULL,
-                       family = "binomial",
+                       family,
+                       periodicity = FALSE,
                        ...){
 
-  # add check that binwidth is even. If not, it will bet converted to an even number
-  if((binwidth %% 2) != 0) {
-    binwidth <- 2 * round(binwidth/2)
-    message(paste("binwidth should have an even integer value. Converting to a new binwidth of", binwidth))
+
+  if(!all(c("id", "value", "index") %in% ls(Y))){
+    stop('Y must be a dataframe containing variables "id", "index", and "value".')
+  }
+
+  # sort data by id and index
+  Y = Y[order(Y$id, Y$index),]
+
+  if(is.null(npc) & is.null(pve)){
+    pve = 0.95
+    message("Setting pve = 0.95")
   }
 
   N <- length(unique(Y$id))
   J <- length(unique(Y$index)) # assumes all subjects are on same even grid
+
+  # add check that binwidth is even. If not, it will bet converted to an even number
+  if(J/binwidth < 10){
+    binwidth = J/10
+    message(paste0("binwidth should be no more than J/10. Converting to a new binwidth of ", binwidth, "."))
+  }
+  if((binwidth %% 2) != 0) {
+    binwidth <- 2 * round(binwidth/2)
+    message(paste0("binwidth should have an even integer value. Converting to a new binwidth of ", binwidth, "."))
+  }
+
 
   if(is.null(argvals)){
     argvals <- sort(unique(Y$index))
@@ -94,7 +108,7 @@ fast_gfpca <- function(Y,
     ##
 
     fit_fastgfpca <- vector(mode="list",length=J)
-    pb <- txtProgressBar(0, J, style=3)
+    #pb <- txtProgressBar(0, J, style=3)
 
     # define midpoints for overlapping bins
     s_m  <- 1:J
@@ -102,13 +116,12 @@ fast_gfpca <- function(Y,
     for(j in s_m){
       sind_j <- (j-binwidth/2):(j+binwidth/2) %% J
       sind_j[sind_j == 0] <- J
-      df_j <-Y %>%
-        filter(index %in% argvals[sind_j])
+      df_j <- filter(Y, index %in% argvals[sind_j])
       fit_j <- glmer(value ~ 1 + (1|id), data=df_j, family=family, nAGQ = 0)
       fit_fastgfpca[[j]] <- data.frame("id" = 1:N,
                                          "eta_i" = coef(fit_j)$id[[1]],
                                          "sind_bin" = j)
-      setTxtProgressBar(pb, j)
+      #setTxtProgressBar(pb, j)
     }
     fit_fastgfpca <- bind_rows(fit_fastgfpca)
 
@@ -124,17 +137,15 @@ fast_gfpca <- function(Y,
     knots <- 20
 
     fastgfpca <- fpca.face(matrix(fit_fastgfpca$eta_i, N, J, byrow=FALSE),
-                           npc=npc, pve=0.99,
+                           npc=npc,
+                           pve=pve,
                            argvals = argvals,
                            knots=knots,lower=0,
-                           periodicity = TRUE)
+                           periodicity = periodicity)
 
     if(is.null(npc)){
       npc = fastgfpca$npc
     }
-
-    ## re-scale eigenfunctions to have the correct magnitude
-    fastgfpca$efunctions <- fastgfpca$efunctions*sqrt(J)
 
   }else{
 
@@ -153,7 +164,7 @@ fast_gfpca <- function(Y,
     bins <- bins[-c(1:(binwidth/2))]
     bins <- c(bins, rep(s_m[length(s_m)], length.out = length(last_bin)))
 
-    df_bin <- Y %>% mutate(sind_bin = rep(bins, N))
+    df_bin <- mutate(Y, sind_bin = rep(bins, N))
 
     # fit local model
     ##
@@ -175,7 +186,7 @@ fast_gfpca <- function(Y,
     # do FPCA on the local estimates \tilde{\eta_i(s)}
     # knots will be given by bindwidth for smaller values of D
     # need to edit number of knots here
-    if(J/binwidth <= 40){
+    if(J/binwidth <= 40 + 10){
       knots <- ceiling(J/binwidth/2)
     }else{
       knots <- 40
@@ -183,17 +194,15 @@ fast_gfpca <- function(Y,
 
     argvals_bin <- sort(argvals[unique(bins)])
     fastgfpca <- fpca.face(matrix(fit_fastgfpca$eta_i, N, length(argvals_bin), byrow=FALSE),
-                           npc = npc, pve=0.99,
+                           npc = npc,
+                           pve=pve,
                            argvals=argvals_bin,
                            knots=knots,
-                           periodicity = FALSE)
+                           periodicity = periodicity)
 
     if(is.null(npc)){
       npc = fastgfpca$npc
     }
-
-    ## re-scale eigenfunctions to have the correct magnitude
-    fastgfpca$efunctions <- fastgfpca$efunctions*sqrt(length(argvals_bin))
 
     fastgfpca$efunctions <- reeval_efunctions(knots, argvals_bin, argvals,
                                               fastgfpca$efunctions, npc)
@@ -206,7 +215,7 @@ fast_gfpca <- function(Y,
   Y$id_fac <- factor(Y$id)
   gam_formula = "value ~ s(index, k=10)"
   for(i in 1:npc){
-    Y[[paste0("Phi", i)]] <- fastgfpca$efunctions[,i]
+    Y[[paste0("Phi", i)]] <- rep(fastgfpca$efunctions[,i], N)
     gam_formula = paste0(gam_formula, " + s(id_fac, by=Phi",i,", bs= 're')")
   }
 

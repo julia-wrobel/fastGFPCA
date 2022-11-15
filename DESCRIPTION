@@ -1,6 +1,7 @@
 Package: fastGFPCA
 Title: Fast generalized principal components analysis
 Version: 0.0.0.9000
+Date: 2022-11-11
 Authors@R: c(
     person("Julia", "Wrobel", role = c("aut", "cre"), 
     email = "julia.wrobel@cuanschutz.edu",
@@ -8,7 +9,10 @@ Authors@R: c(
     person("Ciprian", "Crainiceanu", role = "aut", email = "ccraini1@jhu.edu"),
     person("Andrew", "Leroux", role = "aut", email = "andrew.leroux@cuanschutz.edu")
     )
-Description: A method for performing fast scalable GFPCA.
+Description: A method for performing fast generalized principal components analysis. 
+  Generalized indicates that the outcome Y can follow exponential family distributions.
+  including binomial and Poisson,
+  to accommodate FPCA of binary and count data.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -16,6 +20,7 @@ RoxygenNote: 7.2.1
 Suggests: 
     knitr,
     rmarkdown,
+    testthat (>= 3.0.0),
     tidyverse
 VignetteBuilder: knitr
 Imports: 
@@ -24,3 +29,4 @@ Imports:
     lme4,
     mgcv,
     refund
+Config/testthat/edition: 3
