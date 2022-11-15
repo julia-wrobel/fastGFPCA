@@ -101,7 +101,7 @@ bin_mod$family
 We could instead uses a binomial family with `probit` link; this is implemented below.
 
 ```{r gfpca_probit}
-probit_mod <- fast_gfpca(Y = bin_sim$df_gfpca, overlap = FALSE, binwidth = 10, npc = 4,
+probit_mod <- fast_gfpca(Y = bin_sim$df_gfpca, overlap = TRUE, binwidth = 20, npc = 4,
                           family = binomial(link = "probit"))
 
 probit_mod$family
@@ -110,7 +110,7 @@ probit_mod$family
 
 The plots below show the estimated principal components for the `logit` and `probit` binary FPCA models. 
 
-```{r plot_bFPCA, echo = FALSE, fig.show='hold'}
+```{r plot_bFPCA, echo = TRUE, fig.show='hold'}
 
 flip_efunctions = function(data){
   if(data[["logit_mod"]] %*% data[["truth"]] < 0){
@@ -137,6 +137,8 @@ phi_df %>%
   select(-data) %>%
   unnest(new_phi) %>%
   ungroup() %>% 
+  mutate(logit_mod = logit_mod * sqrt(200),
+         probit_mod = probit_mod * sqrt(200)) %>%
   pivot_longer(truth:probit_mod, names_to = "model", values_to = "value") %>%
   ggplot(aes(s, value, group = model, color = model, linetype = model)) +
   geom_line() +

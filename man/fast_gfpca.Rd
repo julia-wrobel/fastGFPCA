@@ -11,7 +11,7 @@ fast_gfpca(
   binwidth = 10,
   pve = NULL,
   npc = NULL,
-  family = "binomial",
+  family,
   periodicity = FALSE,
   ...
 )

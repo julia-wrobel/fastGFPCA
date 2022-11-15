@@ -67,7 +67,7 @@ fast_gfpca <- function(Y,
                        binwidth = 10, # must be even number
                        pve = NULL,
                        npc = NULL,
-                       family = "binomial",
+                       family,
                        periodicity = FALSE,
                        ...){
 
@@ -140,9 +140,6 @@ fast_gfpca <- function(Y,
       npc = fastgfpca$npc
     }
 
-    ## re-scale eigenfunctions to have the correct magnitude
-    fastgfpca$efunctions <- fastgfpca$efunctions*sqrt(J)
-
   }else{
 
 
@@ -192,9 +189,6 @@ fast_gfpca <- function(Y,
     if(is.null(npc)){
       npc = fastgfpca$npc
     }
-
-    ## re-scale eigenfunctions to have the correct magnitude
-    fastgfpca$efunctions <- fastgfpca$efunctions*sqrt(length(argvals_bin))
 
     fastgfpca$efunctions <- reeval_efunctions(knots, argvals_bin, argvals,
                                               fastgfpca$efunctions, npc)
